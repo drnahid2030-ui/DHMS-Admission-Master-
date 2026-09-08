@@ -54,14 +54,57 @@
   .act-block{background:var(--rose-bg);color:var(--rose);}
   .act-unblock{background:var(--teal-bg);color:var(--teal-deep);}
   .act-delete{background:#F3F4F6;color:var(--ink-muted);}
+
+  .tabs{display:flex;gap:8px;margin-bottom:16px;}
+  .tab-btn{
+    flex:1;background:#fff;border:1.5px solid var(--line);border-radius:10px;
+    padding:11px;font-size:14px;font-weight:600;color:var(--ink-muted);cursor:pointer;
+  }
+  .tab-btn.active{background:var(--teal);border-color:var(--teal);color:#fff;}
+  .panel{display:none;}
+  .panel.active{display:block;}
+
+  .form-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px;box-shadow:var(--shadow);margin-bottom:20px;}
+  .form-row{margin-bottom:14px;}
+  .form-label{font-size:13px;color:var(--ink-muted);margin-bottom:6px;font-weight:600;}
+  .form-input, .form-select, .form-textarea{
+    width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:8px;
+    font-family:'Hind Siliguri',sans-serif;font-size:14px;background:#fff;color:var(--ink);
+  }
+  .form-textarea{resize:vertical;min-height:56px;}
+  .opt-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .opt-field{display:flex;align-items:center;gap:8px;}
+  .opt-field .opt-letter{
+    flex:0 0 28px;height:36px;border-radius:8px;background:var(--teal-bg);color:var(--teal-deep);
+    display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;
+  }
+  .radio-row{display:flex;gap:14px;flex-wrap:wrap;}
+  .radio-opt{display:flex;align-items:center;gap:6px;font-size:14px;cursor:pointer;}
+  .submit-btn{
+    background:var(--teal);color:#fff;border:none;padding:11px 20px;border-radius:8px;
+    font-size:14px;font-weight:600;cursor:pointer;width:100%;
+  }
+  .form-msg{font-size:13px;margin-top:10px;display:none;}
+  .form-msg.ok{color:var(--correct);display:block;}
+  .form-msg.err{color:var(--wrong);display:block;}
+  .qlist-item{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:8px;font-size:13.5px;}
+  .qlist-item .qtxt{font-weight:600;margin-bottom:4px;}
+  .qlist-item .qmeta{color:var(--ink-muted);font-size:12px;}
+  .qlist-item .qdel{float:right;background:#F3F4F6;color:var(--wrong);border:none;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer;}
 </style>
 </head>
 <body>
 <div class="head">
-  <h1>👥 ব্যবহারকারী ড্যাশবোর্ড</h1>
-  <div class="sub">DHMS এডমিশন মাস্টার · কে কতক্ষণ ব্যবহার করছে</div>
+  <h1>👥 অ্যাডমিন প্যানেল</h1>
+  <div class="sub">DHMS এডমিশন মাস্টার</div>
 </div>
 <div class="wrap">
+  <div class="tabs">
+    <button class="tab-btn active" id="tabUsers">👥 ব্যবহারকারী</button>
+    <button class="tab-btn" id="tabQuestions">➕ প্রশ্ন যোগ করুন</button>
+  </div>
+
+  <div class="panel active" id="usersPanel">
   <div class="stat-row" id="statRow"></div>
   <div class="toolbar">
     <button class="refresh-btn" id="refreshBtn">🔄 রিফ্রেশ করুন</button>
@@ -71,6 +114,53 @@
     <div id="tableHolder"><div class="loading">লোড হচ্ছে...</div></div>
   </div>
   <p class="muted">এই লিংকটি নিরাপদে রাখুন — এটি প্রকাশ্যে শেয়ার করবেন না, কারণ এতে ব্যবহারকারীদের নাম ও মোবাইল নম্বর দেখা যায়। "ব্লক" করা হলে ঐ মোবাইল নম্বর দিয়ে অ্যাপ আর খোলা যাবে না।</p>
+  </div>
+
+  <div class="panel" id="questionsPanel">
+    <div class="form-card">
+      <div class="form-row">
+        <div class="form-label">বিষয়</div>
+        <select class="form-select" id="qSubject">
+          <option value="bangla">বাংলা</option>
+          <option value="english">English</option>
+          <option value="gonit">গণিত</option>
+          <option value="biggan">বিজ্ঞান</option>
+          <option value="gk">সাধারণ জ্ঞান</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-label">প্রশ্ন</div>
+        <textarea class="form-textarea" id="qText" placeholder="প্রশ্নটি এখানে লিখুন..."></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-label">অপশনসমূহ</div>
+        <div class="opt-grid">
+          <div class="opt-field"><span class="opt-letter">ক</span><input class="form-input" id="qOptA" placeholder="অপশন ক"></div>
+          <div class="opt-field"><span class="opt-letter">খ</span><input class="form-input" id="qOptB" placeholder="অপশন খ"></div>
+          <div class="opt-field"><span class="opt-letter">গ</span><input class="form-input" id="qOptC" placeholder="অপশন গ"></div>
+          <div class="opt-field"><span class="opt-letter">ঘ</span><input class="form-input" id="qOptD" placeholder="অপশন ঘ"></div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-label">সঠিক উত্তর</div>
+        <div class="radio-row" id="qAnswerRadios">
+          <label class="radio-opt"><input type="radio" name="qAnswer" value="A" checked> ক</label>
+          <label class="radio-opt"><input type="radio" name="qAnswer" value="B"> খ</label>
+          <label class="radio-opt"><input type="radio" name="qAnswer" value="C"> গ</label>
+          <label class="radio-opt"><input type="radio" name="qAnswer" value="D"> ঘ</label>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-label">ব্যাখ্যা (ঐচ্ছিক)</div>
+        <textarea class="form-textarea" id="qExplain" placeholder="সংক্ষিপ্ত ব্যাখ্যা (না দিলে ব্যাখ্যা বক্স দেখাবে না)"></textarea>
+      </div>
+      <button class="submit-btn" id="qSubmitBtn">প্রশ্ন যোগ করুন</button>
+      <div class="form-msg" id="qFormMsg"></div>
+    </div>
+
+    <div class="section-label" style="font-size:13.5px;color:var(--ink-muted);font-weight:600;margin-bottom:10px;">সদ্য যোগ করা প্রশ্ন</div>
+    <div id="customQList"><div class="loading">লোড হচ্ছে...</div></div>
+  </div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -221,6 +311,100 @@
     renderTable();
   });
   load();
+
+  // ---------------- Tabs ----------------
+  var SUBJECT_LABELS = {bangla:"বাংলা", english:"English", gonit:"গণিত", biggan:"বিজ্ঞান", gk:"সাধারণ জ্ঞান"};
+  byId("tabUsers").addEventListener("click", function(){
+    byId("tabUsers").classList.add("active");
+    byId("tabQuestions").classList.remove("active");
+    byId("usersPanel").classList.add("active");
+    byId("questionsPanel").classList.remove("active");
+  });
+  byId("tabQuestions").addEventListener("click", function(){
+    byId("tabQuestions").classList.add("active");
+    byId("tabUsers").classList.remove("active");
+    byId("questionsPanel").classList.add("active");
+    byId("usersPanel").classList.remove("active");
+    loadCustomQuestions();
+  });
+
+  // ---------------- Add-question form ----------------
+  function showFormMsg(text, isErr){
+    var el = byId("qFormMsg");
+    el.textContent = text;
+    el.className = "form-msg " + (isErr ? "err" : "ok");
+  }
+
+  byId("qSubmitBtn").addEventListener("click", function(){
+    var subject = byId("qSubject").value;
+    var qText = byId("qText").value.trim();
+    var optA = byId("qOptA").value.trim();
+    var optB = byId("qOptB").value.trim();
+    var optC = byId("qOptC").value.trim();
+    var optD = byId("qOptD").value.trim();
+    var answer = (document.querySelector('input[name="qAnswer"]:checked')||{}).value;
+    var explanation = byId("qExplain").value.trim();
+
+    if(!qText || !optA || !optB || !optC || !optD || !answer){
+      showFormMsg("সব ঘর (ব্যাখ্যা ছাড়া) পূরণ করুন।", true);
+      return;
+    }
+
+    var btn = byId("qSubmitBtn");
+    btn.disabled = true;
+    db.collection("custom_questions").add({
+      subject: subject,
+      q: qText,
+      options: [optA, optB, optC, optD],
+      answer: answer,
+      explanation: explanation,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    }).then(function(){
+      showFormMsg("প্রশ্ন যোগ হয়েছে ✅", false);
+      byId("qText").value = "";
+      byId("qOptA").value = "";
+      byId("qOptB").value = "";
+      byId("qOptC").value = "";
+      byId("qOptD").value = "";
+      byId("qExplain").value = "";
+      btn.disabled = false;
+      loadCustomQuestions();
+    })['catch'](function(err){
+      showFormMsg("ব্যর্থ হয়েছে: " + err.message, true);
+      btn.disabled = false;
+    });
+  });
+
+  function loadCustomQuestions(){
+    var holder = byId("customQList");
+    holder.innerHTML = '<div class="loading">লোড হচ্ছে...</div>';
+    db.collection("custom_questions").orderBy("createdAt", "desc").limit(50).get().then(function(snap){
+      if(snap.empty){
+        holder.innerHTML = '<div class="empty">এখনো কোনো প্রশ্ন যোগ করা হয়নি।</div>';
+        return;
+      }
+      var html = "";
+      snap.forEach(function(doc){
+        var d = doc.data();
+        html += '<div class="qlist-item">';
+        html += '<button class="qdel" data-id="'+doc.id+'">মুছুন</button>';
+        html += '<div class="qtxt">'+escapeHtml(d.q)+'</div>';
+        html += '<div class="qmeta">'+(SUBJECT_LABELS[d.subject]||d.subject)+' · সঠিক উত্তর: '+escapeHtml(d.answer)+'</div>';
+        html += '</div>';
+      });
+      holder.innerHTML = html;
+      holder.querySelectorAll(".qdel").forEach(function(btn){
+        btn.addEventListener("click", function(){
+          if(!confirm("এই প্রশ্নটি মুছে ফেলতে চান?")) return;
+          db.collection("custom_questions").doc(btn.getAttribute("data-id"))['delete']().then(function(){
+            loadCustomQuestions();
+          })['catch'](function(err){ alert("ব্যর্থ হয়েছে: " + err.message); });
+        });
+      });
+    })['catch'](function(err){
+      holder.innerHTML = '<div class="empty">ডেটা লোড করা যায়নি।<br>'+escapeHtml(err.message)+'</div>';
+    });
+  }
 })();
 </script>
 </body>

@@ -419,11 +419,33 @@
     {key:"biggan",  name:"বিজ্ঞান",        meta:"সাধারণ বিজ্ঞান", icon:"🔬"},
     {key:"gk",      name:"সাধারণ জ্ঞান",   meta:"বাংলাদেশ ও বিশ্ব", icon:"🌍"}
   ];
-  var DURATIONS = [5, 10, 15, 20];
 
   var STORE_KEY = "dhms_admission_master_v2";
   var OLD_STORE_KEY = "dhms_admission_master_v1";
   var QUESTIONS = window.QUESTIONS || [];
+  var LETTER_TO_IDX = {A:0,B:1,C:2,D:3};
+  QUESTIONS.forEach(function(q){
+    q.answerIndex = LETTER_TO_IDX[q.answer];
+  });
+
+  function loadCustomQuestions(){
+    if(!db) return Promise.resolve();
+    return db.collection("custom_questions").get().then(function(snap){
+      snap.forEach(function(doc){
+        var d = doc.data();
+        if(!d || !d.subject || !d.q || !Array.isArray(d.options) || d.options.length!==4 || !d.answer) return;
+        QUESTIONS.push({
+          id: "c_"+doc.id,
+          subject: d.subject,
+          q: d.q,
+          options: d.options,
+          answer: d.answer,
+          explanation: d.explanation || "",
+          answerIndex: LETTER_TO_IDX[d.answer]
+        });
+      });
+    })['catch'](function(){});
+  }
 
   function loadStore(){
     try{
@@ -457,10 +479,6 @@
     if(key==="__review__") return store.wrongIds.length;
     if(key==="__all__") return QUESTIONS.length;
     return QUESTIONS.filter(function(q){return q.subject===key;}).length;
-  }
-  function fmtTime(sec){
-    var m = Math.floor(sec/60), s = sec%60;
-    return (m<10?"0":"")+m+":"+(s<10?"0":"")+s;
   }
 
   var LETTERS = ["ক","খ","গ","ঘ"];
@@ -501,30 +519,28 @@
       idx: 0,
       score: 0,
       startedAt: Date.now(),
-      timeLimitSec: opts.timed ? opts.durationMin*60 : null,
-      remainingSec: opts.timed ? opts.durationMin*60 : null
+      perQSec: opts.timed ? opts.perQSec : null,
+      qRemaining: opts.timed ? opts.perQSec : null
     };
     clearTimer();
-    if(state.mode === "timed"){
-      timerInterval = setInterval(tickTimer, 1000);
-    }
     renderQuiz();
   }
 
-  function tickTimer(){
-    if(!state || state.mode !== "timed") return;
-    state.remainingSec--;
-    if(state.remainingSec <= 0){
-      state.remainingSec = 0;
-      clearTimer();
-      finishSession();
-      return;
-    }
-    var t = byId("timerDisplay");
-    if(t){
-      t.textContent = fmtTime(state.remainingSec);
-      if(state.remainingSec <= 30) t.classList.add("low");
-    }
+  function startQuestionTimer(){
+    clearTimer();
+    state.qRemaining = state.perQSec;
+    timerInterval = setInterval(function(){
+      state.qRemaining--;
+      var t = byId("timerDisplay");
+      if(t){
+        t.textContent = state.qRemaining;
+        if(state.qRemaining <= 3) t.classList.add("low");
+      }
+      if(state.qRemaining <= 0){
+        clearTimer();
+        nextQuestion();
+      }
+    }, 1000);
   }
 
   function goHome(){
@@ -600,17 +616,21 @@
     });
   }
 
+  var QUESTION_COUNTS = [10, 20, 30];
+  var PERQ_SECONDS = [10, 20, 30];
+
   // ---------------- Timed picker ----------------
   function renderTimedPicker(){
     var chosenSubject = "__all__";
-    var chosenDuration = 10;
+    var chosenCount = 10;
+    var chosenSeconds = 20;
 
     var html = "";
     html += '<div class="screen">';
     html += '<div class="topbar"><span class="home-tap" id="homeBtn"><span class="ico">⌂</span> হোম</span><span></span></div>';
     html += '<div class="content">';
     html += '<h2 style="margin:4px 0 2px;">টাইম গেম সেশন</h2>';
-    html += '<div style="color:var(--ink-muted);font-size:13.5px;margin-bottom:10px;">নির্দিষ্ট সময়ের মধ্যে যত বেশি সম্ভব প্রশ্নের উত্তর দিন। সময় শেষ হলে সেশন স্বয়ংক্রিয়ভাবে শেষ হয়ে যাবে।</div>';
+    html += '<div style="color:var(--ink-muted);font-size:13.5px;margin-bottom:10px;">প্রতিটা প্রশ্নের জন্য নির্দিষ্ট সময় থাকবে। সময় শেষ হলে প্রশ্নটি এড়িয়ে পরেরটায় চলে যাবে।</div>';
 
     html += '<div class="section-label">বিষয়</div>';
     html += '<div class="chip-row" id="subjectChips">';
@@ -620,10 +640,17 @@
     });
     html += '</div>';
 
-    html += '<div class="section-label">সময়</div>';
-    html += '<div class="chip-row" id="durationChips">';
-    DURATIONS.forEach(function(d,i){
-      html += '<div class="chip'+(i===1?' active':'')+'" data-min="'+d+'">'+d+' মিনিট</div>';
+    html += '<div class="section-label">প্রশ্ন সংখ্যা</div>';
+    html += '<div class="chip-row" id="countChips">';
+    QUESTION_COUNTS.forEach(function(c,i){
+      html += '<div class="chip'+(i===0?' active':'')+'" data-count="'+c+'">'+c+' টি</div>';
+    });
+    html += '</div>';
+
+    html += '<div class="section-label">প্রতি প্রশ্নে সময়</div>';
+    html += '<div class="chip-row" id="secChips">';
+    PERQ_SECONDS.forEach(function(s,i){
+      html += '<div class="chip'+(i===1?' active':'')+'" data-sec="'+s+'">'+s+' সেকেন্ড</div>';
     });
     html += '</div>';
 
@@ -639,18 +666,25 @@
         chosenSubject = el.getAttribute("data-key");
       });
     });
-    root.querySelectorAll("#durationChips .chip").forEach(function(el){
+    root.querySelectorAll("#countChips .chip").forEach(function(el){
       el.addEventListener("click", function(){
-        root.querySelectorAll("#durationChips .chip").forEach(function(c){c.classList.remove("active");});
+        root.querySelectorAll("#countChips .chip").forEach(function(c){c.classList.remove("active");});
         el.classList.add("active");
-        chosenDuration = parseInt(el.getAttribute("data-min"),10);
+        chosenCount = parseInt(el.getAttribute("data-count"),10);
+      });
+    });
+    root.querySelectorAll("#secChips .chip").forEach(function(el){
+      el.addEventListener("click", function(){
+        root.querySelectorAll("#secChips .chip").forEach(function(c){c.classList.remove("active");});
+        el.classList.add("active");
+        chosenSeconds = parseInt(el.getAttribute("data-sec"),10);
       });
     });
     byId("startTimedBtn").addEventListener("click", function(){
       store.timedRuns++;
       saveStore(store);
       var label = (chosenSubject==="__all__" ? "সব বিষয় (মিশ্র)" : (SUBJECTS.filter(function(s){return s.key===chosenSubject;})[0]||{}).name) + " · টাইম গেম";
-      startSession(chosenSubject, label, {timed:true, durationMin:chosenDuration});
+      startSession(chosenSubject, label, {timed:true, perQSec:chosenSeconds, limit:chosenCount});
     });
   }
 
@@ -669,7 +703,7 @@
     html += '<div class="topbar">';
     html += '<span class="home-tap" id="homeBtn"><span class="ico">⌂</span> হোম</span>';
     if(timed){
-      html += '<span class="timer'+(state.remainingSec<=30?' low':'')+'" id="timerDisplay">'+fmtTime(state.remainingSec)+'</span>';
+      html += '<span class="timer'+(state.qRemaining<=3?' low':'')+'" id="timerDisplay">'+state.qRemaining+'</span>';
     } else {
       html += '<span class="score">স্কোর: '+state.score+'/'+state.idx+'</span>';
     }
@@ -729,6 +763,10 @@
     if(nb) nb.addEventListener("click", nextQuestion);
     var sb = byId("skipBtn");
     if(sb) sb.addEventListener("click", nextQuestion);
+
+    if(timed && !item.answered){
+      startQuestionTimer();
+    }
   }
 
   function pickOption(el){
@@ -759,6 +797,7 @@
   }
 
   function nextQuestion(){
+    clearTimer();
     if(state.idx < state.items.length-1){
       state.idx++;
       renderQuiz();
@@ -827,10 +866,10 @@
     html += '</div></div>';
     root.innerHTML = html;
 
-    var lastSubject = state.subjectKey, lastLabel = state.label, lastMode = state.mode, lastDur = state.timeLimitSec;
+    var lastSubject = state.subjectKey, lastLabel = state.label, lastMode = state.mode, lastPerQSec = state.perQSec, lastLimit = state.items.length;
     byId("retrySame").addEventListener("click", function(){
       if(lastMode === "timed"){
-        startSession(lastSubject, lastLabel, {timed:true, durationMin:Math.round(lastDur/60)});
+        startSession(lastSubject, lastLabel, {timed:true, perQSec:lastPerQSec, limit:lastLimit});
       } else {
         startSession(lastSubject, lastLabel);
       }
@@ -886,12 +925,6 @@
       return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
     });
   }
-
-  // map answer letter (A/B/C/D) to index 0-3, precompute once
-  var LETTER_TO_IDX = {A:0,B:1,C:2,D:3};
-  QUESTIONS.forEach(function(q){
-    q.answerIndex = LETTER_TO_IDX[q.answer];
-  });
 
   // ---------------- Gate screen (name + mobile, one-time) ----------------
   function renderGate(){
@@ -956,12 +989,14 @@
 
   function boot(){
     currentUser = loadUser();
-    if(!currentUser){
-      renderGate();
-    } else {
-      root.innerHTML = '<div class="screen" style="display:flex;align-items:center;justify-content:center;min-height:100vh;color:var(--ink-muted);font-size:14px;">লোড হচ্ছে...</div>';
-      checkBlockedAndProceed();
-    }
+    root.innerHTML = '<div class="screen" style="display:flex;align-items:center;justify-content:center;min-height:100vh;color:var(--ink-muted);font-size:14px;">লোড হচ্ছে...</div>';
+    loadCustomQuestions().then(function(){
+      if(!currentUser){
+        renderGate();
+      } else {
+        checkBlockedAndProceed();
+      }
+    });
   }
 
   boot();
