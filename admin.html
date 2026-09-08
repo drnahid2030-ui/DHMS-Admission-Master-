@@ -7,35 +7,53 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Bengali:wght@600;700&family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --paper:#FAF6EC; --ink:#211D16; --ink-muted:#6E6656;
-    --green:#0F4C3A; --green-deep:#0A362A; --gold:#B8862E;
-    --line:#DDD2B8; --maroon:#8E2A2A;
+    --bg:#F4F6F8; --ink:#1E2530; --ink-muted:#6B7684;
+    --teal:#0F766E; --teal-deep:#0A5450; --teal-bg:#E3F4F2;
+    --amber:#D97706; --line:#E4E8EC; --rose:#BE123C; --rose-bg:#FBE7EC;
+    --correct:#15803D; --wrong:#DC2626;
+    --shadow:0 2px 10px rgba(20,30,40,.06);
   }
   *{box-sizing:border-box;}
-  body{margin:0;background:var(--paper);color:var(--ink);font-family:'Hind Siliguri',sans-serif;}
-  .head{background:var(--green);color:#fff;padding:20px;border-bottom:3px solid var(--gold);}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Hind Siliguri',sans-serif;}
+  .head{background:linear-gradient(135deg,var(--teal) 0%,var(--teal-deep) 100%);color:#fff;padding:22px 20px;border-radius:0 0 18px 18px;}
   .head h1{margin:0;font-family:'Noto Serif Bengali',serif;font-size:22px;}
-  .head .sub{font-size:13px;color:#CFE3D9;margin-top:4px;}
-  .wrap{max-width:900px;margin:0 auto;padding:18px;}
+  .head .sub{font-size:13px;color:rgba(255,255,255,.82);margin-top:4px;}
+  .wrap{max-width:960px;margin:0 auto;padding:18px;}
   .stat-row{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;}
-  .stat-box{flex:1;min-width:110px;background:#fff;border:1px solid var(--line);border-radius:8px;padding:12px;text-align:center;}
-  .stat-box .num{font-family:'Noto Serif Bengali',serif;font-size:22px;font-weight:700;color:var(--green);}
+  .stat-box{flex:1;min-width:110px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px;text-align:center;box-shadow:var(--shadow);}
+  .stat-box .num{font-family:'Noto Serif Bengali',serif;font-size:22px;font-weight:700;color:var(--teal-deep);}
   .stat-box .lbl{font-size:11.5px;color:var(--ink-muted);margin-top:2px;}
-  table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:8px;overflow:hidden;}
+  table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:var(--shadow);}
   th,td{padding:10px 12px;text-align:left;font-size:13.5px;border-bottom:1px solid var(--line);}
-  th{background:var(--green-deep);color:#fff;font-weight:600;font-size:12.5px;position:sticky;top:0;}
+  th{background:var(--teal-deep);color:#fff;font-weight:600;font-size:12.5px;position:sticky;top:0;}
   tr:last-child td{border-bottom:none;}
-  tr:hover td{background:#FBF6E8;}
+  tr:hover td{background:#F7FBFA;}
+  tr.blocked-row td{background:var(--rose-bg);}
   .muted{color:var(--ink-muted);font-size:12px;}
+  .toolbar{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap;}
   .refresh-btn{
-    background:var(--green);color:#fff;border:none;padding:9px 16px;border-radius:6px;
-    font-size:13.5px;cursor:pointer;margin-bottom:14px;
+    background:var(--teal);color:#fff;border:none;padding:9px 16px;border-radius:8px;
+    font-size:13.5px;cursor:pointer;
+  }
+  .search-input{
+    flex:1;min-width:160px;padding:9px 13px;border:1.5px solid var(--line);border-radius:8px;
+    font-family:'Hind Siliguri',sans-serif;font-size:13.5px;background:#fff;color:var(--ink);
   }
   .table-wrap{overflow-x:auto;}
   .loading, .empty{text-align:center;color:var(--ink-muted);padding:30px;}
-  .accu-good{color:#1D7A4C;font-weight:600;}
-  .accu-mid{color:var(--gold);font-weight:600;}
-  .accu-low{color:var(--maroon);font-weight:600;}
+  .accu-good{color:var(--correct);font-weight:600;}
+  .accu-mid{color:var(--amber);font-weight:600;}
+  .accu-low{color:var(--wrong);font-weight:600;}
+  .status-pill{font-size:11px;font-weight:700;border-radius:20px;padding:3px 9px;white-space:nowrap;}
+  .status-active{background:var(--teal-bg);color:var(--teal-deep);}
+  .status-blocked{background:var(--rose-bg);color:var(--rose);}
+  .act-btn{
+    border:none;border-radius:7px;padding:6px 11px;font-size:12px;cursor:pointer;
+    margin-right:6px;white-space:nowrap;
+  }
+  .act-block{background:var(--rose-bg);color:var(--rose);}
+  .act-unblock{background:var(--teal-bg);color:var(--teal-deep);}
+  .act-delete{background:#F3F4F6;color:var(--ink-muted);}
 </style>
 </head>
 <body>
@@ -45,11 +63,14 @@
 </div>
 <div class="wrap">
   <div class="stat-row" id="statRow"></div>
-  <button class="refresh-btn" id="refreshBtn">🔄 রিফ্রেশ করুন</button>
+  <div class="toolbar">
+    <button class="refresh-btn" id="refreshBtn">🔄 রিফ্রেশ করুন</button>
+    <input class="search-input" id="searchInput" type="text" placeholder="নাম বা মোবাইল দিয়ে খুঁজুন...">
+  </div>
   <div class="table-wrap">
     <div id="tableHolder"><div class="loading">লোড হচ্ছে...</div></div>
   </div>
-  <p class="muted">এই লিংকটি নিরাপদে রাখুন — এটি প্রকাশ্যে শেয়ার করবেন না, কারণ এতে ব্যবহারকারীদের নাম ও মোবাইল নম্বর দেখা যায়।</p>
+  <p class="muted">এই লিংকটি নিরাপদে রাখুন — এটি প্রকাশ্যে শেয়ার করবেন না, কারণ এতে ব্যবহারকারীদের নাম ও মোবাইল নম্বর দেখা যায়। "ব্লক" করা হলে ঐ মোবাইল নম্বর দিয়ে অ্যাপ আর খোলা যাবে না।</p>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -67,6 +88,10 @@
   };
   firebase.initializeApp(firebaseConfig);
   var db = firebase.firestore();
+  var allUsers = [];
+  var searchTerm = "";
+
+  function byId(id){ return document.getElementById(id); }
 
   function fmtDuration(sec){
     sec = sec || 0;
@@ -86,59 +111,115 @@
     });
   }
 
-  function render(users){
+  function renderStats(users){
     var totalUsers = users.length;
     var totalSeconds = users.reduce(function(a,u){return a+(u.totalSeconds||0);},0);
     var totalAttempts = users.reduce(function(a,u){return a+(u.totalAttempted||0);},0);
+    var blockedCount = users.filter(function(u){return u.blocked===true;}).length;
 
     var statHtml = "";
     statHtml += '<div class="stat-box"><div class="num">'+totalUsers+'</div><div class="lbl">মোট ব্যবহারকারী</div></div>';
     statHtml += '<div class="stat-box"><div class="num">'+fmtDuration(totalSeconds)+'</div><div class="lbl">সম্মিলিত ব্যবহারের সময়</div></div>';
     statHtml += '<div class="stat-box"><div class="num">'+totalAttempts+'</div><div class="lbl">মোট প্রশ্নের চেষ্টা</div></div>';
+    statHtml += '<div class="stat-box"><div class="num">'+blockedCount+'</div><div class="lbl">ব্লক করা</div></div>';
     byId("statRow").innerHTML = statHtml;
+  }
 
+  function renderTable(){
+    var users = allUsers.slice();
+    if(searchTerm){
+      var t = searchTerm.toLowerCase();
+      users = users.filter(function(u){
+        return (u.name||'').toLowerCase().indexOf(t)!==-1 || (u.mobile||'').indexOf(t)!==-1;
+      });
+    }
     if(users.length === 0){
-      byId("tableHolder").innerHTML = '<div class="empty">এখনো কেউ অ্যাপ ব্যবহার করেনি।</div>';
+      byId("tableHolder").innerHTML = '<div class="empty">কোনো ব্যবহারকারী পাওয়া যায়নি।</div>';
       return;
     }
-
     users.sort(function(a,b){ return (b.totalSeconds||0) - (a.totalSeconds||0); });
 
     var html = '<table><thead><tr>';
-    html += '<th>নাম</th><th>মোবাইল</th><th>মোট সময়</th><th>সেশন</th><th>প্রশ্ন চেষ্টা</th><th>সঠিক হার</th><th>প্রথম এসেছিল</th><th>শেষ সক্রিয়</th>';
+    html += '<th>নাম</th><th>মোবাইল</th><th>স্ট্যাটাস</th><th>মোট সময়</th><th>সেশন</th><th>প্রশ্ন চেষ্টা</th><th>সঠিক হার</th><th>প্রথম এসেছিল</th><th>শেষ সক্রিয়</th><th>অ্যাকশন</th>';
     html += '</tr></thead><tbody>';
     users.forEach(function(u){
       var acc = u.totalAttempted ? Math.round(100*(u.totalCorrect||0)/u.totalAttempted) : null;
       var accCls = acc===null ? '' : (acc>=75?'accu-good':(acc>=45?'accu-mid':'accu-low'));
-      html += '<tr>';
+      var blocked = u.blocked === true;
+      html += '<tr class="'+(blocked?'blocked-row':'')+'">';
       html += '<td>'+escapeHtml(u.name)+'</td>';
       html += '<td>'+escapeHtml(u.mobile)+'</td>';
+      html += '<td><span class="status-pill '+(blocked?'status-blocked':'status-active')+'">'+(blocked?'ব্লক করা':'সক্রিয়')+'</span></td>';
       html += '<td>'+fmtDuration(u.totalSeconds)+'</td>';
       html += '<td>'+(u.sessions||0)+'</td>';
       html += '<td>'+(u.totalAttempted||0)+'</td>';
       html += '<td class="'+accCls+'">'+(acc===null?'—':acc+'%')+'</td>';
       html += '<td class="muted">'+fmtDate(u.firstSeen)+'</td>';
       html += '<td class="muted">'+fmtDate(u.lastSeen)+'</td>';
+      html += '<td>';
+      if(blocked){
+        html += '<button class="act-btn act-unblock" data-act="unblock" data-id="'+escapeHtml(u._id)+'">আনব্লক</button>';
+      } else {
+        html += '<button class="act-btn act-block" data-act="block" data-id="'+escapeHtml(u._id)+'">ব্লক</button>';
+      }
+      html += '<button class="act-btn act-delete" data-act="delete" data-id="'+escapeHtml(u._id)+'" data-name="'+escapeHtml(u.name)+'">মুছুন</button>';
+      html += '</td>';
       html += '</tr>';
     });
     html += '</tbody></table>';
     byId("tableHolder").innerHTML = html;
-  }
 
-  function byId(id){ return document.getElementById(id); }
+    byId("tableHolder").querySelectorAll(".act-block, .act-unblock").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var id = btn.getAttribute("data-id");
+        var toBlock = btn.getAttribute("data-act") === "block";
+        btn.disabled = true;
+        db.collection("users").doc(id).set({blocked: toBlock}, {merge:true}).then(function(){
+          load();
+        })['catch'](function(err){
+          alert("ব্যর্থ হয়েছে: " + err.message);
+          btn.disabled = false;
+        });
+      });
+    });
+    byId("tableHolder").querySelectorAll(".act-delete").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var id = btn.getAttribute("data-id");
+        var name = btn.getAttribute("data-name");
+        if(!confirm('"'+name+'" — এই ব্যবহারকারীর সব তথ্য স্থায়ীভাবে মুছে ফেলতে চান?')) return;
+        btn.disabled = true;
+        db.collection("users").doc(id)['delete']().then(function(){
+          load();
+        })['catch'](function(err){
+          alert("ব্যর্থ হয়েছে: " + err.message);
+          btn.disabled = false;
+        });
+      });
+    });
+  }
 
   function load(){
     byId("tableHolder").innerHTML = '<div class="loading">লোড হচ্ছে...</div>';
     db.collection("users").get().then(function(snap){
       var users = [];
-      snap.forEach(function(doc){ users.push(doc.data()); });
-      render(users);
+      snap.forEach(function(doc){
+        var d = doc.data();
+        d._id = doc.id;
+        users.push(d);
+      });
+      allUsers = users;
+      renderStats(users);
+      renderTable();
     })['catch'](function(err){
       byId("tableHolder").innerHTML = '<div class="empty">ডেটা লোড করা যায়নি।<br>'+escapeHtml(err.message)+'</div>';
     });
   }
 
   byId("refreshBtn").addEventListener("click", load);
+  byId("searchInput").addEventListener("input", function(){
+    searchTerm = this.value.trim();
+    renderTable();
+  });
   load();
 })();
 </script>
