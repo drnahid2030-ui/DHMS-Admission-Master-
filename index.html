@@ -251,14 +251,121 @@
     padding:10px 18px 4px;
   }
   ::selection{background:#F1D28A;}
+
+  /* ---------- Gate screen ---------- */
+  .gate-wrap{min-height:100vh;display:flex;flex-direction:column;justify-content:center;padding:24px 22px;}
+  .gate-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:26px 22px;}
+  .gate-card h2{margin:0 0 6px;font-size:21px;}
+  .gate-card .gate-sub{font-size:13.5px;color:var(--ink-muted);margin-bottom:20px;line-height:1.5;}
+  .field-label{font-size:13px;color:var(--ink-muted);margin:0 2px 6px;}
+  .field-input{
+    width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:8px;
+    font-family:'Hind Siliguri',sans-serif;font-size:15.5px;margin-bottom:16px;background:#fff;color:var(--ink);
+  }
+  .field-input:focus{outline:none;border-color:var(--green);}
+  .field-error{color:var(--wrong);font-size:12.5px;margin:-10px 0 14px;display:none;}
+  .field-error.show{display:block;}
 </style>
 </head>
 <body>
 <div id="app"></div>
 <script src="questions.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
 (function(){
   "use strict";
+
+  // ---------------- Firebase (usage tracking) ----------------
+  var firebaseConfig = {
+    apiKey: "AIzaSyAzZOSUuK_TgliOClY1qTh2xtg8ayFxRPM",
+    authDomain: "dhms-admission-master.firebaseapp.com",
+    projectId: "dhms-admission-master",
+    storageBucket: "dhms-admission-master.firebasestorage.app",
+    messagingSenderId: "794922118272",
+    appId: "1:794922118272:web:2da02faf8f94286347ca65"
+  };
+  var db = null;
+  try{
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.firestore();
+  }catch(e){ db = null; }
+
+  var USER_KEY = "dhms_user_v1";
+  var currentUser = null;
+  function loadUser(){
+    try{
+      var raw = localStorage.getItem(USER_KEY);
+      if(raw) return JSON.parse(raw);
+    }catch(e){}
+    return null;
+  }
+  function saveUser(u){
+    try{ localStorage.setItem(USER_KEY, JSON.stringify(u)); }catch(e){}
+  }
+  function sanitizeMobile(m){
+    return String(m).replace(/[^0-9]/g,"");
+  }
+
+  var pendingSeconds = 0;
+  var lastTick = Date.now();
+  function heartbeatTick(){
+    var now = Date.now();
+    pendingSeconds += Math.round((now - lastTick)/1000);
+    lastTick = now;
+    flushUsage(false);
+  }
+  function flushUsage(isFinal){
+    if(!db || !currentUser || pendingSeconds <= 0) return;
+    var delta = pendingSeconds;
+    pendingSeconds = 0;
+    var ref = db.collection("users").doc(sanitizeMobile(currentUser.mobile));
+    var payload = {
+      name: currentUser.name,
+      mobile: currentUser.mobile,
+      lastSeen: firebase.firestore.FieldValue.serverTimestamp(),
+      totalSeconds: firebase.firestore.FieldValue.increment(delta)
+    };
+    ref.set(payload, {merge:true})['catch'](function(){});
+  }
+  function registerUserCloud(u){
+    if(!db) return;
+    var ref = db.collection("users").doc(sanitizeMobile(u.mobile));
+    ref.get().then(function(snap){
+      var payload = {
+        name: u.name,
+        mobile: u.mobile,
+        lastSeen: firebase.firestore.FieldValue.serverTimestamp(),
+        sessions: firebase.firestore.FieldValue.increment(1)
+      };
+      if(!snap.exists){
+        payload.firstSeen = firebase.firestore.FieldValue.serverTimestamp();
+        payload.totalSeconds = 0;
+      }
+      ref.set(payload, {merge:true})['catch'](function(){});
+    })['catch'](function(){
+      ref.set({
+        name:u.name, mobile:u.mobile,
+        lastSeen: firebase.firestore.FieldValue.serverTimestamp(),
+        sessions: firebase.firestore.FieldValue.increment(1)
+      }, {merge:true})['catch'](function(){});
+    });
+  }
+  function syncStatsCloud(store){
+    if(!db || !currentUser) return;
+    var ref = db.collection("users").doc(sanitizeMobile(currentUser.mobile));
+    ref.set({
+      totalAttempted: store.attempted,
+      totalCorrect: store.correct
+    }, {merge:true})['catch'](function(){});
+  }
+
+  setInterval(heartbeatTick, 20000);
+  document.addEventListener("visibilitychange", function(){
+    if(document.visibilityState === "hidden") flushUsage(true);
+    else lastTick = Date.now();
+  });
+  window.addEventListener("pagehide", function(){ flushUsage(true); });
 
   var SUBJECTS = [
     {key:"bangla",  name:"বাংলা",         meta:"সাহিত্য, ব্যাকরণ"},
@@ -287,6 +394,7 @@
   }
   function saveStore(s){
     try{ localStorage.setItem(STORE_KEY, JSON.stringify(s)); }catch(e){}
+    syncStatsCloud(s);
   }
   var store = loadStore();
   if(store.timedRuns === undefined) store.timedRuns = 0;
@@ -726,7 +834,48 @@
     q.answerIndex = LETTER_TO_IDX[q.answer];
   });
 
-  renderHome();
+  // ---------------- Gate screen (name + mobile, one-time) ----------------
+  function renderGate(){
+    var html = "";
+    html += '<div class="gate-wrap"><div class="gate-card">';
+    html += '<h2 class="serif">স্বাগতম 🙏</h2>';
+    html += '<div class="gate-sub">শুরু করার আগে আপনার নাম ও মোবাইল নম্বরটি দিন। এটা একবারই জিজ্ঞেস করা হবে।</div>';
+    html += '<div class="field-label">আপনার নাম</div>';
+    html += '<input class="field-input" id="gateName" type="text" placeholder="যেমনঃ নাহিদ ইসলাম">';
+    html += '<div class="field-error" id="nameErr">নাম দিন</div>';
+    html += '<div class="field-label">মোবাইল নম্বর</div>';
+    html += '<input class="field-input" id="gateMobile" type="tel" placeholder="যেমনঃ 01XXXXXXXXX">';
+    html += '<div class="field-error" id="mobileErr">সঠিক মোবাইল নম্বর দিন</div>';
+    html += '<button class="btn" id="gateSubmit">শুরু করুন</button>';
+    html += '</div></div>';
+    root.innerHTML = html;
+
+    byId("gateSubmit").addEventListener("click", function(){
+      var name = byId("gateName").value.trim();
+      var mobile = sanitizeMobile(byId("gateMobile").value);
+      var ok = true;
+      if(name.length < 2){ byId("nameErr").classList.add("show"); ok = false; } else { byId("nameErr").classList.remove("show"); }
+      if(mobile.length < 10){ byId("mobileErr").classList.add("show"); ok = false; } else { byId("mobileErr").classList.remove("show"); }
+      if(!ok) return;
+      var u = {name:name, mobile:mobile};
+      saveUser(u);
+      currentUser = u;
+      registerUserCloud(u);
+      renderHome();
+    });
+  }
+
+  function boot(){
+    currentUser = loadUser();
+    if(!currentUser){
+      renderGate();
+    } else {
+      registerUserCloud(currentUser);
+      renderHome();
+    }
+  }
+
+  boot();
 })();
 </script>
 </body>

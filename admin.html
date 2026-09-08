@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin · DHMS এডমিশন মাস্টার</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Bengali:wght@600;700&family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FAF6EC; --ink:#211D16; --ink-muted:#6E6656;
+    --green:#0F4C3A; --green-deep:#0A362A; --gold:#B8862E;
+    --line:#DDD2B8; --maroon:#8E2A2A;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:'Hind Siliguri',sans-serif;}
+  .head{background:var(--green);color:#fff;padding:20px;border-bottom:3px solid var(--gold);}
+  .head h1{margin:0;font-family:'Noto Serif Bengali',serif;font-size:22px;}
+  .head .sub{font-size:13px;color:#CFE3D9;margin-top:4px;}
+  .wrap{max-width:900px;margin:0 auto;padding:18px;}
+  .stat-row{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;}
+  .stat-box{flex:1;min-width:110px;background:#fff;border:1px solid var(--line);border-radius:8px;padding:12px;text-align:center;}
+  .stat-box .num{font-family:'Noto Serif Bengali',serif;font-size:22px;font-weight:700;color:var(--green);}
+  .stat-box .lbl{font-size:11.5px;color:var(--ink-muted);margin-top:2px;}
+  table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:8px;overflow:hidden;}
+  th,td{padding:10px 12px;text-align:left;font-size:13.5px;border-bottom:1px solid var(--line);}
+  th{background:var(--green-deep);color:#fff;font-weight:600;font-size:12.5px;position:sticky;top:0;}
+  tr:last-child td{border-bottom:none;}
+  tr:hover td{background:#FBF6E8;}
+  .muted{color:var(--ink-muted);font-size:12px;}
+  .refresh-btn{
+    background:var(--green);color:#fff;border:none;padding:9px 16px;border-radius:6px;
+    font-size:13.5px;cursor:pointer;margin-bottom:14px;
+  }
+  .table-wrap{overflow-x:auto;}
+  .loading, .empty{text-align:center;color:var(--ink-muted);padding:30px;}
+  .accu-good{color:#1D7A4C;font-weight:600;}
+  .accu-mid{color:var(--gold);font-weight:600;}
+  .accu-low{color:var(--maroon);font-weight:600;}
+</style>
+</head>
+<body>
+<div class="head">
+  <h1>👥 ব্যবহারকারী ড্যাশবোর্ড</h1>
+  <div class="sub">DHMS এডমিশন মাস্টার · কে কতক্ষণ ব্যবহার করছে</div>
+</div>
+<div class="wrap">
+  <div class="stat-row" id="statRow"></div>
+  <button class="refresh-btn" id="refreshBtn">🔄 রিফ্রেশ করুন</button>
+  <div class="table-wrap">
+    <div id="tableHolder"><div class="loading">লোড হচ্ছে...</div></div>
+  </div>
+  <p class="muted">এই লিংকটি নিরাপদে রাখুন — এটি প্রকাশ্যে শেয়ার করবেন না, কারণ এতে ব্যবহারকারীদের নাম ও মোবাইল নম্বর দেখা যায়।</p>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+(function(){
+  "use strict";
+  var firebaseConfig = {
+    apiKey: "AIzaSyAzZOSUuK_TgliOClY1qTh2xtg8ayFxRPM",
+    authDomain: "dhms-admission-master.firebaseapp.com",
+    projectId: "dhms-admission-master",
+    storageBucket: "dhms-admission-master.firebasestorage.app",
+    messagingSenderId: "794922118272",
+    appId: "1:794922118272:web:2da02faf8f94286347ca65"
+  };
+  firebase.initializeApp(firebaseConfig);
+  var db = firebase.firestore();
+
+  function fmtDuration(sec){
+    sec = sec || 0;
+    var h = Math.floor(sec/3600);
+    var m = Math.floor((sec%3600)/60);
+    if(h>0) return h+' ঘ. '+m+' মি.';
+    return m+' মিনিট';
+  }
+  function fmtDate(ts){
+    if(!ts) return '—';
+    var d = ts.toDate ? ts.toDate() : new Date(ts);
+    return d.toLocaleDateString('bn-BD', {day:'numeric', month:'short'}) + ', ' + d.toLocaleTimeString('bn-BD', {hour:'2-digit', minute:'2-digit'});
+  }
+  function escapeHtml(s){
+    return String(s==null?'':s).replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
+
+  function render(users){
+    var totalUsers = users.length;
+    var totalSeconds = users.reduce(function(a,u){return a+(u.totalSeconds||0);},0);
+    var totalAttempts = users.reduce(function(a,u){return a+(u.totalAttempted||0);},0);
+
+    var statHtml = "";
+    statHtml += '<div class="stat-box"><div class="num">'+totalUsers+'</div><div class="lbl">মোট ব্যবহারকারী</div></div>';
+    statHtml += '<div class="stat-box"><div class="num">'+fmtDuration(totalSeconds)+'</div><div class="lbl">সম্মিলিত ব্যবহারের সময়</div></div>';
+    statHtml += '<div class="stat-box"><div class="num">'+totalAttempts+'</div><div class="lbl">মোট প্রশ্নের চেষ্টা</div></div>';
+    byId("statRow").innerHTML = statHtml;
+
+    if(users.length === 0){
+      byId("tableHolder").innerHTML = '<div class="empty">এখনো কেউ অ্যাপ ব্যবহার করেনি।</div>';
+      return;
+    }
+
+    users.sort(function(a,b){ return (b.totalSeconds||0) - (a.totalSeconds||0); });
+
+    var html = '<table><thead><tr>';
+    html += '<th>নাম</th><th>মোবাইল</th><th>মোট সময়</th><th>সেশন</th><th>প্রশ্ন চেষ্টা</th><th>সঠিক হার</th><th>প্রথম এসেছিল</th><th>শেষ সক্রিয়</th>';
+    html += '</tr></thead><tbody>';
+    users.forEach(function(u){
+      var acc = u.totalAttempted ? Math.round(100*(u.totalCorrect||0)/u.totalAttempted) : null;
+      var accCls = acc===null ? '' : (acc>=75?'accu-good':(acc>=45?'accu-mid':'accu-low'));
+      html += '<tr>';
+      html += '<td>'+escapeHtml(u.name)+'</td>';
+      html += '<td>'+escapeHtml(u.mobile)+'</td>';
+      html += '<td>'+fmtDuration(u.totalSeconds)+'</td>';
+      html += '<td>'+(u.sessions||0)+'</td>';
+      html += '<td>'+(u.totalAttempted||0)+'</td>';
+      html += '<td class="'+accCls+'">'+(acc===null?'—':acc+'%')+'</td>';
+      html += '<td class="muted">'+fmtDate(u.firstSeen)+'</td>';
+      html += '<td class="muted">'+fmtDate(u.lastSeen)+'</td>';
+      html += '</tr>';
+    });
+    html += '</tbody></table>';
+    byId("tableHolder").innerHTML = html;
+  }
+
+  function byId(id){ return document.getElementById(id); }
+
+  function load(){
+    byId("tableHolder").innerHTML = '<div class="loading">লোড হচ্ছে...</div>';
+    db.collection("users").get().then(function(snap){
+      var users = [];
+      snap.forEach(function(doc){ users.push(doc.data()); });
+      render(users);
+    })['catch'](function(err){
+      byId("tableHolder").innerHTML = '<div class="empty">ডেটা লোড করা যায়নি।<br>'+escapeHtml(err.message)+'</div>';
+    });
+  }
+
+  byId("refreshBtn").addEventListener("click", load);
+  load();
+})();
+</script>
+</body>
+</html>
