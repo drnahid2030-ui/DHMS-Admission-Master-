@@ -175,6 +175,17 @@
     </div>
     <div class="form-card">
       <div class="form-row">
+        <div class="form-label">বিষয় (ক্যাটেগরি)</div>
+        <select class="form-select" id="mtSubject">
+          <option value="সাধারণ">সাধারণ</option>
+          <option value="বাংলা">বাংলা</option>
+          <option value="English">English</option>
+          <option value="গণিত">গণিত</option>
+          <option value="বিজ্ঞান">বিজ্ঞান</option>
+          <option value="সামাজিক বিজ্ঞান">সামাজিক বিজ্ঞান</option>
+        </select>
+      </div>
+      <div class="form-row">
         <div class="form-label">প্রশ্ন</div>
         <textarea class="form-textarea" id="mtQText" placeholder="প্রশ্নটি এখানে লিখুন..."></textarea>
       </div>
@@ -195,6 +206,10 @@
           <label class="radio-opt"><input type="radio" name="mtAnswer" value="C"> গ</label>
           <label class="radio-opt"><input type="radio" name="mtAnswer" value="D"> ঘ</label>
         </div>
+      </div>
+      <div class="form-row">
+        <div class="form-label">মডেল টেস্ট নম্বর (যেমনঃ 01, 02, 03)</div>
+        <input class="form-input" id="mtNumber" type="text" placeholder="যেমনঃ 01">
       </div>
       <div class="form-row">
         <div class="form-label">ব্যাখ্যা (ঐচ্ছিক)</div>
@@ -498,23 +513,26 @@
     var optC = byId("mtOptC").value.trim();
     var optD = byId("mtOptD").value.trim();
     var answer = (document.querySelector('input[name="mtAnswer"]:checked')||{}).value;
+    var mtNumber = byId("mtNumber").value.trim();
     var explanation = byId("mtExplain").value.trim();
 
     if(!qText || !optA || !optB || !optC || !optD || !answer){
-      byId("mtFormMsg").textContent = "সব ঘর (ব্যাখ্যা ছাড়া) পূরণ করুন।";
+      byId("mtFormMsg").textContent = "সব ঘর (মডেল টেস্ট নম্বর এবং ব্যাখ্যা ছাড়া) পূরণ করুন।";
       byId("mtFormMsg").className = "form-msg err";
       return;
     }
 
     var btn = byId("mtSubmitBtn");
     btn.disabled = true;
-    db.collection("model_test_questions").add({
+    var data = {
       q: qText,
       options: [optA, optB, optC, optD],
       answer: answer,
       explanation: explanation,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    }).then(function(){
+    };
+    if(mtNumber) data.model_test_no = mtNumber;
+    db.collection("model_test_questions").add(data).then(function(){
       byId("mtFormMsg").textContent = "প্রশ্ন যোগ হয়েছে ✅";
       byId("mtFormMsg").className = "form-msg ok";
       byId("mtQText").value = "";
@@ -522,6 +540,7 @@
       byId("mtOptB").value = "";
       byId("mtOptC").value = "";
       byId("mtOptD").value = "";
+      byId("mtNumber").value = "";
       byId("mtExplain").value = "";
       btn.disabled = false;
       loadModelTestData();
@@ -551,7 +570,9 @@
         html += '<div class="qlist-item">';
         html += '<button class="qdel" data-id="'+doc.id+'">মুছুন</button>';
         html += '<div class="qtxt">'+escapeHtml(d.q)+'</div>';
-        html += '<div class="qmeta">সঠিক উত্তর: '+escapeHtml(d.answer)+'</div>';
+        var metaText = 'সঠিক উত্তর: '+escapeHtml(d.answer);
+        if(d.model_test_no) metaText = 'মডেল টেস্ট '+escapeHtml(d.model_test_no)+' · '+metaText;
+        html += '<div class="qmeta">'+metaText+'</div>';
         html += '</div>';
       });
       holder.innerHTML = html;

@@ -534,20 +534,21 @@
 
   function startModelTest(){
     if(!db){
-      alert("মডেল টেস্ট এখন উপলব্ধ নয়।");
+      renderHome();
       return;
     }
     root.innerHTML = '<div class="screen" style="display:flex;align-items:center;justify-content:center;min-height:100vh;"><div style="text-align:center;"><div style="font-size:40px;margin-bottom:14px;">⏳</div><div style="color:var(--ink-muted);font-size:14px;">মডেল টেস্ট লোড হচ্ছে...</div></div></div>';
     db.collection("model_test_questions").get().then(function(snap){
       if(snap.empty){
-        alert("মডেল টেস্ট এখনো উপলব্ধ নয়।");
         renderHome();
         return;
       }
       var pool = [];
+      var modelTestNo = null;
       snap.forEach(function(doc){
         var d = doc.data();
         if(d && d.q && Array.isArray(d.options) && d.options.length===4 && d.answer){
+          if(!modelTestNo && d.model_test_no) modelTestNo = d.model_test_no;
           pool.push({
             id: "mt_" + doc.id,
             subject: "modeltest",
@@ -559,20 +560,20 @@
           });
         }
       });
-      if(pool.length < 100){
-        alert("মডেল টেস্টে এখনো "+pool.length+" টি প্রশ্ন আছে (১০০টি প্রয়োজন)।");
+      if(pool.length === 0){
         renderHome();
         return;
       }
-      pool = shuffle(pool).slice(0, 100);
+      pool = shuffle(pool);
       var items = pool.map(function(q){
         var order = shuffle([0,1,2,3]);
         return {q:q, order:order, answered:false, picked:null};
       });
+      var label = (modelTestNo ? "মডেল টেস্ট " + modelTestNo : "মডেল টেস্ট") + " (" + pool.length + "টি প্রশ্ন)";
       state = {
         mode: "modeltest",
         subjectKey: "modeltest",
-        label: "মডেল টেস্ট (১০০টি প্রশ্ন)",
+        label: label,
         items: items,
         idx: 0,
         score: 0,
@@ -583,7 +584,6 @@
       clearTimer();
       renderQuiz();
     })['catch'](function(err){
-      alert("ত্রুটি: " + err.message);
       renderHome();
     });
   }
