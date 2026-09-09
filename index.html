@@ -351,14 +351,16 @@
     return String(m).replace(/[^0-9]/g,"");
   }
 
-  var pendingSeconds = 0;
-  var lastTick = Date.now();
-  var isBlocked = false;
   function heartbeatTick(){
     var now = Date.now();
     pendingSeconds += Math.round((now - lastTick)/1000);
     lastTick = now;
     flushUsage(false);
+    if(db && currentUser && !isBlocked){
+      db.collection("users").doc(sanitizeMobile(currentUser.mobile)).update({
+        lastHeartbeat: firebase.firestore.FieldValue.serverTimestamp()
+      })['catch'](function(){});
+    }
   }
   function flushUsage(isFinal){
     if(!db || !currentUser || isBlocked || pendingSeconds <= 0) return;
