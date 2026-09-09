@@ -108,6 +108,7 @@
   <div class="tabs">
     <button class="tab-btn active" id="tabUsers">👥 ব্যবহারকারী</button>
     <button class="tab-btn" id="tabQuestions">➕ প্রশ্ন যোগ করুন</button>
+    <button class="tab-btn" id="tabModelTest">🎯 মডেল টেস্ট</button>
   </div>
 
   <div class="panel active" id="usersPanel">
@@ -166,6 +167,57 @@
 
     <div class="section-label" style="font-size:13.5px;color:var(--ink-muted);font-weight:600;margin-bottom:10px;">সদ্য যোগ করা প্রশ্ন</div>
     <div id="customQList"><div class="loading">লোড হচ্ছে...</div></div>
+  </div>
+
+  <div class="panel" id="modelTestPanel">
+    <div style="margin-bottom:20px;">
+      <div style="font-size:13px;color:var(--ink-muted);margin-bottom:10px;">📝 মডেল টেস্ট ম্যানেজ করুন — স্টুডেন্টরা এখানে ১০০টি প্রশ্নের পূর্ণ পরীক্ষা দেবে</div>
+    </div>
+    <div class="form-card">
+      <div class="form-row">
+        <div class="form-label">প্রশ্ন</div>
+        <textarea class="form-textarea" id="mtQText" placeholder="প্রশ্নটি এখানে লিখুন..."></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-label">অপশনসমূহ</div>
+        <div class="opt-grid">
+          <div class="opt-field"><span class="opt-letter">ক</span><input class="form-input" id="mtOptA" placeholder="অপশন ক"></div>
+          <div class="opt-field"><span class="opt-letter">খ</span><input class="form-input" id="mtOptB" placeholder="অপশন খ"></div>
+          <div class="opt-field"><span class="opt-letter">গ</span><input class="form-input" id="mtOptC" placeholder="অপশন গ"></div>
+          <div class="opt-field"><span class="opt-letter">ঘ</span><input class="form-input" id="mtOptD" placeholder="অপশন ঘ"></div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-label">সঠিক উত্তর</div>
+        <div class="radio-row">
+          <label class="radio-opt"><input type="radio" name="mtAnswer" value="A" checked> ক</label>
+          <label class="radio-opt"><input type="radio" name="mtAnswer" value="B"> খ</label>
+          <label class="radio-opt"><input type="radio" name="mtAnswer" value="C"> গ</label>
+          <label class="radio-opt"><input type="radio" name="mtAnswer" value="D"> ঘ</label>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-label">ব্যাখ্যা (ঐচ্ছিক)</div>
+        <textarea class="form-textarea" id="mtExplain" placeholder="সংক্ষিপ্ত ব্যাখ্যা"></textarea>
+      </div>
+      <button class="submit-btn" id="mtSubmitBtn">মডেল টেস্টে যোগ করুন</button>
+      <div class="form-msg" id="mtFormMsg"></div>
+    </div>
+
+    <div style="margin-top:20px;">
+      <div style="font-size:13px;color:var(--ink-muted);font-weight:600;margin-bottom:10px;">📊 মডেল টেস্ট অগ্রগতি</div>
+      <div class="form-card">
+        <div class="stat-row">
+          <div class="stat-box"><div class="num" id="mtCount">0</div><div class="lbl">মোট প্রশ্ন</div></div>
+          <div class="stat-box"><div class="num" style="font-size:18px;" id="mtProgress">0%</div><div class="lbl">সম্পূর্ণতা</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:20px;">
+      <div style="font-size:13px;color:var(--ink-muted);font-weight:600;margin-bottom:10px;">📋 মডেল টেস্ট প্রশ্নসমূহ</div>
+      <div id="mtQList"><div class="loading">লোড হচ্ছে...</div></div>
+    </div>
   </div>
 </div>
 
@@ -343,8 +395,10 @@
   byId("tabQuestions").addEventListener("click", function(){
     byId("tabQuestions").classList.add("active");
     byId("tabUsers").classList.remove("active");
+    byId("tabModelTest").classList.remove("active");
     byId("questionsPanel").classList.add("active");
     byId("usersPanel").classList.remove("active");
+    byId("modelTestPanel").classList.remove("active");
     loadCustomQuestions();
   });
 
@@ -418,6 +472,94 @@
           if(!confirm("এই প্রশ্নটি মুছে ফেলতে চান?")) return;
           db.collection("custom_questions").doc(btn.getAttribute("data-id"))['delete']().then(function(){
             loadCustomQuestions();
+          })['catch'](function(err){ alert("ব্যর্থ হয়েছে: " + err.message); });
+        });
+      });
+    })['catch'](function(err){
+      holder.innerHTML = '<div class="empty">ডেটা লোড করা যায়নি।<br>'+escapeHtml(err.message)+'</div>';
+    });
+  }
+
+  // ============ মডেল টেস্ট ============
+  byId("tabModelTest").addEventListener("click", function(){
+    byId("tabModelTest").classList.add("active");
+    byId("tabUsers").classList.remove("active");
+    byId("tabQuestions").classList.remove("active");
+    byId("modelTestPanel").classList.add("active");
+    byId("usersPanel").classList.remove("active");
+    byId("questionsPanel").classList.remove("active");
+    loadModelTestData();
+  });
+
+  byId("mtSubmitBtn").addEventListener("click", function(){
+    var qText = byId("mtQText").value.trim();
+    var optA = byId("mtOptA").value.trim();
+    var optB = byId("mtOptB").value.trim();
+    var optC = byId("mtOptC").value.trim();
+    var optD = byId("mtOptD").value.trim();
+    var answer = (document.querySelector('input[name="mtAnswer"]:checked')||{}).value;
+    var explanation = byId("mtExplain").value.trim();
+
+    if(!qText || !optA || !optB || !optC || !optD || !answer){
+      byId("mtFormMsg").textContent = "সব ঘর (ব্যাখ্যা ছাড়া) পূরণ করুন।";
+      byId("mtFormMsg").className = "form-msg err";
+      return;
+    }
+
+    var btn = byId("mtSubmitBtn");
+    btn.disabled = true;
+    db.collection("model_test_questions").add({
+      q: qText,
+      options: [optA, optB, optC, optD],
+      answer: answer,
+      explanation: explanation,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    }).then(function(){
+      byId("mtFormMsg").textContent = "প্রশ্ন যোগ হয়েছে ✅";
+      byId("mtFormMsg").className = "form-msg ok";
+      byId("mtQText").value = "";
+      byId("mtOptA").value = "";
+      byId("mtOptB").value = "";
+      byId("mtOptC").value = "";
+      byId("mtOptD").value = "";
+      byId("mtExplain").value = "";
+      btn.disabled = false;
+      loadModelTestData();
+    })['catch'](function(err){
+      byId("mtFormMsg").textContent = "ব্যর্থ হয়েছে: " + err.message;
+      byId("mtFormMsg").className = "form-msg err";
+      btn.disabled = false;
+    });
+  });
+
+  function loadModelTestData(){
+    var holder = byId("mtQList");
+    holder.innerHTML = '<div class="loading">লোড হচ্ছে...</div>';
+    db.collection("model_test_questions").orderBy("createdAt", "desc").get().then(function(snap){
+      var count = snap.size;
+      var progress = Math.min(100, Math.round(count*100/100));
+      byId("mtCount").textContent = count;
+      byId("mtProgress").textContent = progress + "%";
+      
+      if(count === 0){
+        holder.innerHTML = '<div class="empty">এখনো কোনো প্রশ্ন যোগ করা হয়নি।</div>';
+        return;
+      }
+      var html = "";
+      snap.forEach(function(doc){
+        var d = doc.data();
+        html += '<div class="qlist-item">';
+        html += '<button class="qdel" data-id="'+doc.id+'">মুছুন</button>';
+        html += '<div class="qtxt">'+escapeHtml(d.q)+'</div>';
+        html += '<div class="qmeta">সঠিক উত্তর: '+escapeHtml(d.answer)+'</div>';
+        html += '</div>';
+      });
+      holder.innerHTML = html;
+      holder.querySelectorAll(".qdel").forEach(function(btn){
+        btn.addEventListener("click", function(){
+          if(!confirm("এই প্রশ্নটি মডেল টেস্ট থেকে মুছে ফেলতে চান?")) return;
+          db.collection("model_test_questions").doc(btn.getAttribute("data-id"))['delete']().then(function(){
+            loadModelTestData();
           })['catch'](function(err){ alert("ব্যর্থ হয়েছে: " + err.message); });
         });
       });

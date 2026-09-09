@@ -532,6 +532,62 @@
     renderQuiz();
   }
 
+  function startModelTest(){
+    if(!db){
+      alert("মডেল টেস্ট এখন উপলব্ধ নয়।");
+      return;
+    }
+    root.innerHTML = '<div class="screen" style="display:flex;align-items:center;justify-content:center;min-height:100vh;"><div style="text-align:center;"><div style="font-size:40px;margin-bottom:14px;">⏳</div><div style="color:var(--ink-muted);font-size:14px;">মডেল টেস্ট লোড হচ্ছে...</div></div></div>';
+    db.collection("model_test_questions").get().then(function(snap){
+      if(snap.empty){
+        alert("মডেল টেস্ট এখনো উপলব্ধ নয়।");
+        renderHome();
+        return;
+      }
+      var pool = [];
+      snap.forEach(function(doc){
+        var d = doc.data();
+        if(d && d.q && Array.isArray(d.options) && d.options.length===4 && d.answer){
+          pool.push({
+            id: "mt_" + doc.id,
+            subject: "modeltest",
+            q: d.q,
+            options: d.options,
+            answer: d.answer,
+            explanation: d.explanation || "",
+            answerIndex: LETTER_TO_IDX[d.answer]
+          });
+        }
+      });
+      if(pool.length < 100){
+        alert("মডেল টেস্টে এখনো "+pool.length+" টি প্রশ্ন আছে (১০০টি প্রয়োজন)।");
+        renderHome();
+        return;
+      }
+      pool = shuffle(pool).slice(0, 100);
+      var items = pool.map(function(q){
+        var order = shuffle([0,1,2,3]);
+        return {q:q, order:order, answered:false, picked:null};
+      });
+      state = {
+        mode: "modeltest",
+        subjectKey: "modeltest",
+        label: "মডেল টেস্ট (১০০টি প্রশ্ন)",
+        items: items,
+        idx: 0,
+        score: 0,
+        startedAt: Date.now(),
+        perQSec: null,
+        qRemaining: null
+      };
+      clearTimer();
+      renderQuiz();
+    })['catch'](function(err){
+      alert("ত্রুটি: " + err.message);
+      renderHome();
+    });
+  }
+
   function startQuestionTimer(){
     clearTimer();
     state.qRemaining = state.perQSec;
@@ -584,6 +640,8 @@
 
     html += '<div class="mode-card accent-purple" id="cardProgress"><span class="icocirc">📊</span><div class="title">আমার অগ্রগতি</div><div class="desc">বিষয়ভিত্তিক পারফরম্যান্স দেখুন</div></div>';
 
+    html += '<div class="mode-card accent-rose" id="cardModelTest"><span class="icocirc">🎯</span><div class="title">মডেল টেস্ট</div><div class="desc">১০০টি প্রশ্নের আসল পরীক্ষা</div></div>';
+
     html += '</div>';
 
     html += '<div class="section-label">বিষয় বেছে অনুশীলন করুন</div>';
@@ -614,6 +672,10 @@
       });
     }
     byId("cardProgress").addEventListener("click", renderProgress);
+
+    byId("cardModelTest").addEventListener("click", function(){
+      startModelTest();
+    });
 
     root.querySelectorAll(".spine:not(.disabled)").forEach(function(el){
       el.addEventListener("click", function(){
