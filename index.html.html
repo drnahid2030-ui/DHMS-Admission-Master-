@@ -1,0 +1,1064 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>DHMS এডমিশন মাস্টার</title>
+<meta name="theme-color" content="#0F4C3A">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Bengali:wght@500;600;700&family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F4F6F8;
+    --surface:#FFFFFF;
+    --ink:#1E2530;
+    --ink-muted:#6B7684;
+    --teal:#0F766E;
+    --teal-deep:#0A5450;
+    --teal-bg:#E3F4F2;
+    --amber:#D97706;
+    --amber-bg:#FCF0DC;
+    --purple:#7C3AED;
+    --purple-bg:#EFE7FD;
+    --rose:#BE123C;
+    --rose-bg:#FBE7EC;
+    --line:#E4E8EC;
+    --correct:#15803D;
+    --correct-bg:#E4F5E9;
+    --wrong:#DC2626;
+    --wrong-bg:#FCE8E7;
+    --shadow:0 2px 10px rgba(20,30,40,.06);
+    --shadow-lg:0 8px 26px rgba(20,30,40,.10);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Hind Siliguri',sans-serif;
+    min-height:100vh;
+    -webkit-tap-highlight-color:transparent;
+  }
+  h1,h2,h3,.serif{font-family:'Noto Serif Bengali',serif;}
+  #app{max-width:520px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;position:relative;}
+
+  @keyframes fadeSlideIn{
+    from{opacity:0;transform:translateY(8px);}
+    to{opacity:1;transform:translateY(0);}
+  }
+  @keyframes popIn{
+    0%{transform:scale(.9);opacity:0;}
+    100%{transform:scale(1);opacity:1;}
+  }
+  .screen{animation:fadeSlideIn .28s ease both;}
+
+  /* ---------- Masthead (home) ---------- */
+  .masthead{
+    background:linear-gradient(135deg,var(--teal) 0%,var(--teal-deep) 100%);
+    color:#fff;
+    padding:26px 20px 24px;
+    border-radius:0 0 22px 22px;
+  }
+  .masthead .eyebrow{
+    font-size:12px;
+    letter-spacing:.04em;
+    color:rgba(255,255,255,.75);
+    margin-bottom:4px;
+  }
+  .masthead h1{
+    margin:0;
+    font-size:27px;
+    font-weight:700;
+    line-height:1.25;
+  }
+  .masthead .sub{
+    margin-top:6px;
+    font-size:13.5px;
+    color:rgba(255,255,255,.82);
+  }
+
+  /* ---------- Simple top bar (non-home screens) ---------- */
+  .topbar{
+    background:var(--teal-deep);color:#fff;
+    padding:14px 18px 12px;
+    display:flex;align-items:center;justify-content:space-between;
+    gap:10px;
+  }
+  .topbar .home-tap{
+    display:flex;align-items:center;gap:7px;cursor:pointer;
+    font-size:14px;color:rgba(255,255,255,.85);
+    padding:6px 10px;border-radius:20px;
+    transition:background .12s;
+  }
+  .topbar .home-tap:active{background:rgba(255,255,255,.12);}
+  .topbar .home-tap .ico{font-size:16px;line-height:1;}
+  .topbar .timer{
+    font-family:'Noto Serif Bengali',serif;font-weight:700;font-size:16px;
+    color:#FDE68A;background:rgba(255,255,255,.10);
+    padding:4px 13px;border-radius:20px;
+  }
+  .topbar .timer.low{color:#fff;background:var(--wrong);animation:pulseWarn 1s ease infinite;}
+  @keyframes pulseWarn{0%,100%{opacity:1;}50%{opacity:.55;}}
+  .topbar .score{font-weight:600;color:#FDE68A;font-size:13px;}
+  .progress-track{
+    height:5px;background:rgba(255,255,255,.16);
+    border-radius:3px;margin-top:10px;overflow:hidden;
+  }
+  .progress-fill{height:100%;background:#FDE68A;width:0%;transition:width .3s ease;}
+
+  /* ---------- Content shell ---------- */
+  .content{padding:18px 18px 90px;flex:1;}
+  .section-label{
+    font-size:13.5px;
+    font-weight:600;
+    color:var(--ink-muted);
+    margin:24px 2px 10px;
+  }
+  .section-label:first-child{margin-top:4px;}
+
+  /* ---------- Mode cards (home) ---------- */
+  .mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px;}
+  .mode-card{
+    background:var(--surface);border:1px solid var(--line);border-radius:16px;
+    padding:16px 14px;cursor:pointer;position:relative;overflow:hidden;
+    box-shadow:var(--shadow);
+    transition:transform .12s ease, box-shadow .12s ease;
+  }
+  .mode-card:active{transform:scale(.96);box-shadow:var(--shadow);}
+  .mode-card .icocirc{
+    width:42px;height:42px;border-radius:12px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:21px;margin-bottom:10px;
+  }
+  .mode-card.accent-teal .icocirc{background:var(--teal-bg);}
+  .mode-card.accent-amber .icocirc{background:var(--amber-bg);}
+  .mode-card.accent-rose .icocirc{background:var(--rose-bg);}
+  .mode-card.accent-purple .icocirc{background:var(--purple-bg);}
+  .mode-card .title{font-weight:700;font-size:15px;line-height:1.3;}
+  .mode-card .desc{font-size:11.5px;color:var(--ink-muted);margin-top:4px;line-height:1.4;}
+  .mode-card.disabled{opacity:.42;pointer-events:none;}
+  .mode-card .badge{
+    position:absolute;top:12px;right:12px;
+    font-size:11px;font-weight:700;color:var(--teal-deep);
+    background:var(--teal-bg);border-radius:20px;padding:2px 9px;
+  }
+
+  .shelf{display:flex;flex-direction:column;gap:10px;}
+  .spine{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:14px 16px;
+    display:flex;
+    align-items:center;
+    gap:13px;
+    cursor:pointer;
+    box-shadow:var(--shadow);
+    transition:transform .12s ease;
+  }
+  .spine:active{transform:scale(.98);}
+  .spine.disabled{opacity:.42;pointer-events:none;}
+  .spine .sico{
+    flex:0 0 40px;height:40px;border-radius:11px;background:var(--teal-bg);
+    display:flex;align-items:center;justify-content:center;font-size:19px;
+  }
+  .spine.review .sico{background:var(--rose-bg);}
+  .spine .sbody{flex:1;min-width:0;}
+  .spine .name{font-weight:700;font-size:15.5px;}
+  .spine .meta{font-size:12px;color:var(--ink-muted);margin-top:2px;}
+  .spine .count{
+    font-size:13px;font-weight:700;color:var(--teal-deep);
+    background:var(--teal-bg);
+    border-radius:20px;padding:5px 12px;white-space:nowrap;
+  }
+  .spine.review .count{color:var(--rose);background:var(--rose-bg);}
+
+  .stat-row{display:flex;gap:10px;margin-top:2px;}
+  .stat-box{
+    flex:1;background:var(--surface);border:1px solid var(--line);
+    border-radius:13px;padding:12px 10px;text-align:center;
+    box-shadow:var(--shadow);
+  }
+  .stat-box .num{font-family:'Noto Serif Bengali',serif;font-size:20px;font-weight:700;color:var(--teal-deep);}
+  .stat-box .lbl{font-size:11px;color:var(--ink-muted);margin-top:2px;}
+
+  /* ---------- Chips (picker screens) ---------- */
+  .chip-row{display:flex;flex-wrap:wrap;gap:8px;}
+  .chip{
+    background:var(--surface);border:1.5px solid var(--line);border-radius:20px;
+    padding:9px 16px;font-size:14px;cursor:pointer;color:var(--ink);
+    transition:background .12s, color .12s, border-color .12s;
+  }
+  .chip.active{background:var(--teal);border-color:var(--teal);color:#fff;}
+
+  /* ---------- Quiz screen ---------- */
+  .qwrap{padding:22px 18px 120px;flex:1;}
+  .qcount{font-size:12.5px;color:var(--ink-muted);margin-bottom:8px;font-weight:600;}
+  .qtext{
+    font-family:'Noto Serif Bengali',serif;
+    font-size:19px;line-height:1.55;font-weight:600;
+    margin-bottom:20px;
+  }
+  .options{display:flex;flex-direction:column;gap:10px;}
+  .opt{
+    display:flex;align-items:center;gap:12px;
+    background:var(--surface);border:1.5px solid var(--line);
+    border-radius:13px;padding:13px 14px;
+    cursor:pointer;font-size:15.5px;line-height:1.4;
+    box-shadow:var(--shadow);
+    transition:background .12s, border-color .12s, transform .1s;
+  }
+  .opt:active{transform:scale(.985);}
+  .opt .bullet{
+    flex:0 0 30px;height:30px;border-radius:50%;
+    border:1.5px solid var(--ink-muted);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Noto Serif Bengali',serif;font-weight:700;font-size:14px;
+    color:var(--ink-muted);
+    transition:transform .18s ease;
+  }
+  .opt.correct{background:var(--correct-bg);border-color:var(--correct);animation:popIn .22s ease;}
+  .opt.correct .bullet{background:var(--correct);border-color:var(--correct);color:#fff;transform:scale(1.08);}
+  .opt.wrong{background:var(--wrong-bg);border-color:var(--wrong);}
+  .opt.wrong .bullet{background:var(--wrong);border-color:var(--wrong);color:#fff;}
+  .opt.selected-plain{background:var(--purple-bg);border-color:var(--purple);}
+  .opt.selected-plain .bullet{background:var(--purple);border-color:var(--purple);color:#fff;}
+  .opt.locked{cursor:default;}
+  .opt.locked:active{transform:none;}
+  .opt.dim{opacity:.5;}
+
+  .explain-box{
+    margin-top:16px;background:var(--amber-bg);border:1px solid #F1D8A8;
+    border-radius:12px;padding:13px 15px;animation:fadeSlideIn .25s ease;
+  }
+  .explain-box .elabel{font-size:12px;font-weight:700;color:var(--amber);margin-bottom:5px;}
+  .explain-box .etext{font-size:14px;line-height:1.55;color:var(--ink);}
+
+  .next-bar{
+    position:fixed;left:0;right:0;bottom:0;
+    max-width:520px;margin:0 auto;
+    background:var(--bg);border-top:1px solid var(--line);
+    padding:12px 18px calc(12px + env(safe-area-inset-bottom));
+    display:none;
+  }
+  .next-bar.show{display:flex;gap:10px;animation:fadeSlideIn .2s ease;}
+  .btn{
+    display:block;width:100%;text-align:center;
+    background:var(--teal);color:#fff;border:none;
+    font-family:'Hind Siliguri',sans-serif;font-size:16px;font-weight:600;
+    padding:13px;border-radius:11px;cursor:pointer;
+    transition:transform .1s, background .12s;
+  }
+  .btn:active{background:var(--teal-deep);transform:scale(.98);}
+  .btn.secondary{background:var(--surface);color:var(--teal-deep);border:1.5px solid var(--teal);}
+  .btn.ghost{background:transparent;color:var(--ink-muted);border:1.5px solid var(--line);flex:0 0 auto;width:auto;padding:13px 16px;}
+
+  /* ---------- Result screen ---------- */
+  .result-hero{
+    background:linear-gradient(135deg,var(--teal) 0%,var(--teal-deep) 100%);
+    color:#fff;
+    padding:36px 20px 28px;text-align:center;
+    border-radius:0 0 22px 22px;
+  }
+  .result-hero .emoji{font-size:34px;margin-bottom:4px;}
+  .result-hero .big{font-family:'Noto Serif Bengali',serif;font-size:44px;font-weight:700;}
+  .result-hero .cap{font-size:14px;color:rgba(255,255,255,.85);margin-top:4px;}
+  .review-list{display:flex;flex-direction:column;gap:12px;margin-top:6px;}
+  .review-item{
+    background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;
+    box-shadow:var(--shadow);
+  }
+  .review-item .rq{font-family:'Noto Serif Bengali',serif;font-weight:600;font-size:15.5px;margin-bottom:8px;}
+  .review-item .ra{font-size:13.5px;margin:2px 0;}
+  .review-item .ra.correct{color:var(--correct);font-weight:600;}
+  .review-item .ra.wrong{color:var(--wrong);font-weight:600;text-decoration:line-through;}
+  .review-item .rex{font-size:13px;color:var(--ink-muted);margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);line-height:1.5;}
+  .review-item .rex b{color:var(--amber);}
+  .empty-note{
+    text-align:center;color:var(--ink-muted);font-size:14px;
+    padding:24px 10px;
+  }
+  .btn-col{display:flex;flex-direction:column;gap:10px;margin-top:18px;}
+
+  /* ---------- Progress screen ---------- */
+  .prog-item{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:10px;box-shadow:var(--shadow);}
+  .prog-item .prow{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px;}
+  .prog-item .pname{font-weight:700;font-size:15px;}
+  .prog-item .ppct{font-size:13px;font-weight:700;color:var(--teal-deep);}
+  .bar-track{height:8px;background:var(--bg);border-radius:4px;overflow:hidden;}
+  .bar-fill{height:100%;border-radius:4px;background:var(--teal);transition:width .4s ease;}
+  .prog-item .psub{font-size:11.5px;color:var(--ink-muted);margin-top:6px;}
+
+  .footer-credit{
+    text-align:center;font-size:11.5px;color:var(--ink-muted);
+    padding:10px 18px 4px;
+  }
+  ::selection{background:#FDE68A;}
+
+  /* ---------- Gate screen ---------- */
+  .gate-wrap{min-height:100vh;display:flex;flex-direction:column;justify-content:center;padding:24px 22px;background:linear-gradient(160deg,var(--teal) 0%,var(--bg) 55%);}
+  .gate-card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:28px 22px;box-shadow:var(--shadow-lg);}
+  .gate-card h2{margin:0 0 6px;font-size:22px;}
+  .gate-card .gate-sub{font-size:13.5px;color:var(--ink-muted);margin-bottom:20px;line-height:1.5;}
+  .field-label{font-size:13px;color:var(--ink-muted);margin:0 2px 6px;}
+  .field-input{
+    width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:10px;
+    font-family:'Hind Siliguri',sans-serif;font-size:15.5px;margin-bottom:16px;background:var(--surface);color:var(--ink);
+  }
+  .field-input:focus{outline:none;border-color:var(--teal);}
+  .field-error{color:var(--wrong);font-size:12.5px;margin:-10px 0 14px;display:none;}
+  .field-error.show{display:block;}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script src="questions.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  // ---------------- Firebase (usage tracking) ----------------
+  var firebaseConfig = {
+    apiKey: "AIzaSyAzZOSUuK_TgliOClY1qTh2xtg8ayFxRPM",
+    authDomain: "dhms-admission-master.firebaseapp.com",
+    projectId: "dhms-admission-master",
+    storageBucket: "dhms-admission-master.firebasestorage.app",
+    messagingSenderId: "794922118272",
+    appId: "1:794922118272:web:2da02faf8f94286347ca65"
+  };
+  var db = null;
+  try{
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.firestore();
+  }catch(e){ db = null; }
+
+  var USER_KEY = "dhms_user_v1";
+  var currentUser = null;
+  var pendingSeconds = 0;
+  var lastTick = Date.now();
+  var isBlocked = false;
+  var checkTimeout = null;
+  function loadUser(){
+    try{
+      var raw = localStorage.getItem(USER_KEY);
+      if(raw) return JSON.parse(raw);
+    }catch(e){}
+    return null;
+  }
+  function saveUser(u){
+    try{ localStorage.setItem(USER_KEY, JSON.stringify(u)); }catch(e){}
+  }
+  function sanitizeMobile(m){
+    return String(m).replace(/[^0-9]/g,"");
+  }
+
+  function heartbeatTick(){
+    var now = Date.now();
+    pendingSeconds += Math.round((now - lastTick)/1000);
+    lastTick = now;
+    flushUsage(false);
+    if(db && currentUser && !isBlocked){
+      db.collection("users").doc(sanitizeMobile(currentUser.mobile)).update({
+        lastHeartbeat: firebase.firestore.FieldValue.serverTimestamp()
+      })['catch'](function(){});
+    }
+  }
+  function flushUsage(isFinal){
+    if(!db || !currentUser || isBlocked || pendingSeconds <= 0) return;
+    var delta = pendingSeconds;
+    pendingSeconds = 0;
+    var ref = db.collection("users").doc(sanitizeMobile(currentUser.mobile));
+    var payload = {
+      name: currentUser.name,
+      mobile: currentUser.mobile,
+      lastSeen: firebase.firestore.FieldValue.serverTimestamp(),
+      totalSeconds: firebase.firestore.FieldValue.increment(delta)
+    };
+    ref.set(payload, {merge:true})['catch'](function(){});
+  }
+  function registerUserCloud(u){
+    if(!db) return;
+    var ref = db.collection("users").doc(sanitizeMobile(u.mobile));
+    ref.get().then(function(snap){
+      var payload = {
+        name: u.name,
+        mobile: u.mobile,
+        lastSeen: firebase.firestore.FieldValue.serverTimestamp(),
+        sessions: firebase.firestore.FieldValue.increment(1)
+      };
+      if(!snap.exists){
+        payload.firstSeen = firebase.firestore.FieldValue.serverTimestamp();
+        payload.totalSeconds = 0;
+      }
+      ref.set(payload, {merge:true})['catch'](function(){});
+    })['catch'](function(){
+      ref.set({
+        name:u.name, mobile:u.mobile,
+        lastSeen: firebase.firestore.FieldValue.serverTimestamp(),
+        sessions: firebase.firestore.FieldValue.increment(1)
+      }, {merge:true})['catch'](function(){});
+    });
+  }
+  function syncStatsCloud(store){
+    if(!db || !currentUser) return;
+    var ref = db.collection("users").doc(sanitizeMobile(currentUser.mobile));
+    ref.set({
+      totalAttempted: store.attempted,
+      totalCorrect: store.correct
+    }, {merge:true})['catch'](function(){});
+  }
+
+  setInterval(heartbeatTick, 20000);
+  document.addEventListener("visibilitychange", function(){
+    if(document.visibilityState === "hidden") flushUsage(true);
+    else lastTick = Date.now();
+  });
+  window.addEventListener("pagehide", function(){ flushUsage(true); });
+
+  var SUBJECTS = [
+    {key:"bangla",  name:"বাংলা",         meta:"সাহিত্য, ব্যাকরণ", icon:"📖"},
+    {key:"english", name:"English",       meta:"Grammar, Vocabulary", icon:"🔤"},
+    {key:"gonit",   name:"গণিত",          meta:"পাটিগণিত, বীজগণিত", icon:"➗"},
+    {key:"biggan",  name:"বিজ্ঞান",        meta:"সাধারণ বিজ্ঞান", icon:"🔬"},
+    {key:"gk",      name:"সাধারণ জ্ঞান",   meta:"বাংলাদেশ ও বিশ্ব", icon:"🌍"}
+  ];
+
+  var STORE_KEY = "dhms_admission_master_v2";
+  var OLD_STORE_KEY = "dhms_admission_master_v1";
+  var QUESTIONS = window.QUESTIONS || [];
+  var LETTER_TO_IDX = {A:0,B:1,C:2,D:3};
+  QUESTIONS.forEach(function(q){
+    q.answerIndex = LETTER_TO_IDX[q.answer];
+  });
+
+  function loadCustomQuestions(){
+    if(!db) return Promise.resolve();
+    return db.collection("custom_questions").get().then(function(snap){
+      snap.forEach(function(doc){
+        var d = doc.data();
+        if(!d || !d.subject || !d.q || !Array.isArray(d.options) || d.options.length!==4 || !d.answer) return;
+        QUESTIONS.push({
+          id: "c_"+doc.id,
+          subject: d.subject,
+          q: d.q,
+          options: d.options,
+          answer: d.answer,
+          explanation: d.explanation || "",
+          answerIndex: LETTER_TO_IDX[d.answer]
+        });
+      });
+    })['catch'](function(){});
+  }
+
+  function loadStore(){
+    try{
+      var raw = localStorage.getItem(STORE_KEY);
+      if(raw) return JSON.parse(raw);
+      var old = localStorage.getItem(OLD_STORE_KEY);
+      if(old){
+        var o = JSON.parse(old);
+        return {best:o.best||{}, wrongIds:o.wrongIds||[], attempted:o.attempted||0, correct:o.correct||0, timedRuns:0};
+      }
+    }catch(e){}
+    return {best:{}, wrongIds:[], attempted:0, correct:0, timedRuns:0};
+  }
+  function saveStore(s){
+    try{ localStorage.setItem(STORE_KEY, JSON.stringify(s)); }catch(e){}
+    syncStatsCloud(s);
+  }
+  var store = loadStore();
+  if(store.timedRuns === undefined) store.timedRuns = 0;
+
+  function byId(id){ return document.getElementById(id); }
+  function shuffle(arr){
+    var a = arr.slice();
+    for(var i=a.length-1;i>0;i--){
+      var j = Math.floor(Math.random()*(i+1));
+      var t=a[i]; a[i]=a[j]; a[j]=t;
+    }
+    return a;
+  }
+  function countFor(key){
+    if(key==="__review__") return store.wrongIds.length;
+    if(key==="__all__") return QUESTIONS.length;
+    return QUESTIONS.filter(function(q){return q.subject===key;}).length;
+  }
+
+  var LETTERS = ["ক","খ","গ","ঘ"];
+  var root = byId("app");
+  var state = null;
+  var timerInterval = null;
+
+  function clearTimer(){
+    if(timerInterval){ clearInterval(timerInterval); timerInterval = null; }
+  }
+
+  // ---------------- Session builders ----------------
+  function buildPool(subjectKey){
+    if(subjectKey === "__review__"){
+      var idSet = {};
+      store.wrongIds.forEach(function(id){ idSet[id]=true; });
+      return QUESTIONS.filter(function(q){ return idSet[q.id]; });
+    }
+    if(subjectKey === "__all__"){
+      return QUESTIONS;
+    }
+    return QUESTIONS.filter(function(q){ return q.subject === subjectKey; });
+  }
+
+  function startSession(subjectKey, label, opts){
+    opts = opts || {};
+    var pool = shuffle(buildPool(subjectKey));
+    if(opts.limit){ pool = pool.slice(0, opts.limit); }
+    var items = pool.map(function(q){
+      var order = shuffle([0,1,2,3]);
+      return {q:q, order:order, answered:false, picked:null};
+    });
+    state = {
+      mode: opts.timed ? "timed" : "practice",
+      subjectKey: subjectKey,
+      label: label,
+      items: items,
+      idx: 0,
+      score: 0,
+      startedAt: Date.now(),
+      perQSec: opts.timed ? opts.perQSec : null,
+      qRemaining: opts.timed ? opts.perQSec : null
+    };
+    clearTimer();
+    renderQuiz();
+  }
+
+  function startQuestionTimer(){
+    clearTimer();
+    state.qRemaining = state.perQSec;
+    timerInterval = setInterval(function(){
+      state.qRemaining--;
+      var t = byId("timerDisplay");
+      if(t){
+        t.textContent = state.qRemaining;
+        if(state.qRemaining <= 3) t.classList.add("low");
+      }
+      if(state.qRemaining <= 0){
+        clearTimer();
+        nextQuestion();
+      }
+    }, 1000);
+  }
+
+  function goHome(){
+    clearTimer();
+    renderHome();
+  }
+
+  // ---------------- Home ----------------
+  function renderHome(){
+    state = null;
+    var html = "";
+    html += '<div class="screen">';
+    html += '<div class="masthead">';
+    html += '<div class="eyebrow">সিমিলিয়া প্রকাশনী · ভর্তি প্রস্তুতি সহায়িকা</div>';
+    html += '<h1>DHMS এডমিশন মাস্টার</h1>';
+    html += '<div class="sub">DHMS ভর্তি পরীক্ষার জন্য সম্পূর্ণ অনুশীলন প্ল্যাটফর্ম</div>';
+    html += '</div>';
+    html += '<div class="content">';
+
+    html += '<div class="stat-row">';
+    html += '<div class="stat-box"><div class="num">'+store.attempted+'</div><div class="lbl">মোট চেষ্টা</div></div>';
+    var pct = store.attempted ? Math.round(100*store.correct/store.attempted) : 0;
+    html += '<div class="stat-box"><div class="num">'+pct+'%</div><div class="lbl">সঠিক হার</div></div>';
+    html += '<div class="stat-box"><div class="num">'+store.wrongIds.length+'</div><div class="lbl">ভুল প্রশ্ন জমা</div></div>';
+    html += '</div>';
+
+    html += '<div class="section-label">মোড বেছে নিন</div>';
+    html += '<div class="mode-grid">';
+
+    html += '<div class="mode-card accent-teal" id="cardPractice"><span class="icocirc">📘</span><div class="title">MCQ প্র্যাকটিস</div><div class="desc">বিষয়ভিত্তিক অনুশীলন, তাৎক্ষণিক ফলাফল</div></div>';
+
+    html += '<div class="mode-card accent-amber" id="cardTimed"><span class="icocirc">⏱️</span><div class="title">টাইম গেম সেশন</div><div class="desc">সময় বেঁধে আসল পরীক্ষার অনুভূতি</div></div>';
+
+    html += '<div class="mode-card accent-rose'+(store.wrongIds.length===0?' disabled':'')+'" id="cardReview"><span class="icocirc">🔁</span><div class="title">ভুল প্রশ্ন রিভিউ</div><div class="desc">আগে যা ভুল হয়েছে, আবার অনুশীলন</div><span class="badge">'+store.wrongIds.length+'</span></div>';
+
+    html += '<div class="mode-card accent-purple" id="cardProgress"><span class="icocirc">📊</span><div class="title">আমার অগ্রগতি</div><div class="desc">বিষয়ভিত্তিক পারফরম্যান্স দেখুন</div></div>';
+
+    html += '</div>';
+
+    html += '<div class="section-label">বিষয় বেছে অনুশীলন করুন</div>';
+    html += '<div class="shelf">';
+    SUBJECTS.forEach(function(s){
+      var n = countFor(s.key);
+      var best = store.best[s.key];
+      html += '<div class="spine'+(n===0?' disabled':'')+'" data-subject="'+s.key+'" data-label="'+s.name+'">';
+      html += '<div class="sico">'+s.icon+'</div>';
+      html += '<div class="sbody"><div class="name">'+s.name+'</div><div class="meta">'+s.meta+(best!==undefined?' · সেরা স্কোর '+best+'%':'')+'</div></div>';
+      html += '<div class="count">'+n+' টি</div>';
+      html += '</div>';
+    });
+    html += '</div>';
+
+    html += '<div class="footer-credit">DHMS এডমিশন মাস্টার · সিমিলিয়া পাবলিকেশন্স থেকে ডিজিটাইজড</div>';
+    html += '</div></div>';
+    root.innerHTML = html;
+
+    byId("cardPractice").addEventListener("click", function(){
+      var shelf = root.querySelector(".shelf");
+      if(shelf) shelf.scrollIntoView({behavior:"smooth", block:"start"});
+    });
+    byId("cardTimed").addEventListener("click", renderTimedPicker);
+    if(store.wrongIds.length>0){
+      byId("cardReview").addEventListener("click", function(){
+        startSession("__review__", "ভুল প্রশ্ন পুনরালোচনা");
+      });
+    }
+    byId("cardProgress").addEventListener("click", renderProgress);
+
+    root.querySelectorAll(".spine:not(.disabled)").forEach(function(el){
+      el.addEventListener("click", function(){
+        startSession(el.getAttribute("data-subject"), el.getAttribute("data-label"));
+      });
+    });
+  }
+
+  var QUESTION_COUNTS = [10, 20, 30];
+  var PERQ_SECONDS = [10, 20, 30];
+
+  // ---------------- Timed picker ----------------
+  function renderTimedPicker(){
+    var chosenSubject = "__all__";
+    var chosenCount = 10;
+    var chosenSeconds = 20;
+
+    var html = "";
+    html += '<div class="screen">';
+    html += '<div class="topbar"><span class="home-tap" id="homeBtn"><span class="ico">⌂</span> হোম</span><span></span></div>';
+    html += '<div class="content">';
+    html += '<h2 style="margin:4px 0 2px;">টাইম গেম সেশন</h2>';
+    html += '<div style="color:var(--ink-muted);font-size:13.5px;margin-bottom:10px;">প্রতিটা প্রশ্নের জন্য নির্দিষ্ট সময় থাকবে। সময় শেষ হলে প্রশ্নটি এড়িয়ে পরেরটায় চলে যাবে।</div>';
+
+    html += '<div class="section-label">বিষয়</div>';
+    html += '<div class="chip-row" id="subjectChips">';
+    html += '<div class="chip active" data-key="__all__">সব বিষয় (মিশ্র)</div>';
+    SUBJECTS.forEach(function(s){
+      if(countFor(s.key)>0) html += '<div class="chip" data-key="'+s.key+'">'+s.name+'</div>';
+    });
+    html += '</div>';
+
+    html += '<div class="section-label">প্রশ্ন সংখ্যা</div>';
+    html += '<div class="chip-row" id="countChips">';
+    QUESTION_COUNTS.forEach(function(c,i){
+      html += '<div class="chip'+(i===0?' active':'')+'" data-count="'+c+'">'+c+' টি</div>';
+    });
+    html += '</div>';
+
+    html += '<div class="section-label">প্রতি প্রশ্নে সময়</div>';
+    html += '<div class="chip-row" id="secChips">';
+    PERQ_SECONDS.forEach(function(s,i){
+      html += '<div class="chip'+(i===1?' active':'')+'" data-sec="'+s+'">'+s+' সেকেন্ড</div>';
+    });
+    html += '</div>';
+
+    html += '<div class="btn-col"><button class="btn" id="startTimedBtn">সেশন শুরু করুন</button></div>';
+    html += '</div></div>';
+    root.innerHTML = html;
+
+    byId("homeBtn").addEventListener("click", goHome);
+    root.querySelectorAll("#subjectChips .chip").forEach(function(el){
+      el.addEventListener("click", function(){
+        root.querySelectorAll("#subjectChips .chip").forEach(function(c){c.classList.remove("active");});
+        el.classList.add("active");
+        chosenSubject = el.getAttribute("data-key");
+      });
+    });
+    root.querySelectorAll("#countChips .chip").forEach(function(el){
+      el.addEventListener("click", function(){
+        root.querySelectorAll("#countChips .chip").forEach(function(c){c.classList.remove("active");});
+        el.classList.add("active");
+        chosenCount = parseInt(el.getAttribute("data-count"),10);
+      });
+    });
+    root.querySelectorAll("#secChips .chip").forEach(function(el){
+      el.addEventListener("click", function(){
+        root.querySelectorAll("#secChips .chip").forEach(function(c){c.classList.remove("active");});
+        el.classList.add("active");
+        chosenSeconds = parseInt(el.getAttribute("data-sec"),10);
+      });
+    });
+    byId("startTimedBtn").addEventListener("click", function(){
+      store.timedRuns++;
+      saveStore(store);
+      var label = (chosenSubject==="__all__" ? "সব বিষয় (মিশ্র)" : (SUBJECTS.filter(function(s){return s.key===chosenSubject;})[0]||{}).name) + " · টাইম গেম";
+      startSession(chosenSubject, label, {timed:true, perQSec:chosenSeconds, limit:chosenCount});
+    });
+  }
+
+  // ---------------- Quiz ----------------
+  function currentItem(){ return state.items[state.idx]; }
+
+  function renderQuiz(){
+    var item = currentItem();
+    var q = item.q;
+    var total = state.items.length;
+    var pct = Math.round(100*state.idx/total);
+    var timed = state.mode === "timed";
+
+    var html = "";
+    html += '<div class="screen">';
+    html += '<div class="topbar">';
+    html += '<span class="home-tap" id="homeBtn"><span class="ico">⌂</span> হোম</span>';
+    if(timed){
+      html += '<span class="timer'+(state.qRemaining<=3?' low':'')+'" id="timerDisplay">'+state.qRemaining+'</span>';
+    } else {
+      html += '<span class="score">স্কোর: '+state.score+'/'+state.idx+'</span>';
+    }
+    html += '</div>';
+    html += '<div style="padding:0 18px;background:var(--teal-deep);">';
+    html += '<div class="progress-track" style="margin-top:0;margin-bottom:10px;"><div class="progress-fill" style="width:'+pct+'%"></div></div>';
+    html += '</div>';
+
+    html += '<div class="qwrap">';
+    html += '<div class="qcount">'+state.label+' · প্রশ্ন '+(state.idx+1)+' / '+total+'</div>';
+    html += '<div class="qtext">'+escapeHtml(q.q)+'</div>';
+    html += '<div class="options">';
+    item.order.forEach(function(origIdx, pos){
+      var letter = LETTERS[pos];
+      var text = q.options[origIdx];
+      var cls = "opt";
+      if(item.answered){
+        cls += " locked";
+        if(timed){
+          if(item.picked === origIdx) cls += " selected-plain";
+        } else {
+          var isCorrectOpt = (origIdx === q.answerIndex);
+          if(isCorrectOpt) cls += " correct";
+          else if(item.picked === origIdx) cls += " wrong";
+          else cls += " dim";
+        }
+      }
+      html += '<div class="'+cls+'" data-orig="'+origIdx+'">';
+      html += '<div class="bullet">'+letter+'</div><div>'+escapeHtml(text)+'</div>';
+      html += '</div>';
+    });
+    html += '</div>';
+    if(item.answered && !timed && q.explanation){
+      html += '<div class="explain-box"><div class="elabel">💡 ব্যাখ্যা</div><div class="etext">'+escapeHtml(q.explanation)+'</div></div>';
+    }
+    html += '</div></div>';
+
+    var showNextBar = timed ? true : item.answered;
+    html += '<div class="next-bar'+(showNextBar?' show':'')+'" id="nextBar">';
+    if(timed && !item.answered){
+      html += '<button class="btn ghost" id="skipBtn">এড়িয়ে যান</button>';
+    } else {
+      var lbl = (state.idx < total-1) ? "পরবর্তী প্রশ্ন" : "ফলাফল দেখুন";
+      html += '<button class="btn" id="nextBtn">'+lbl+'</button>';
+    }
+    html += '</div>';
+
+    root.innerHTML = html;
+    byId("homeBtn").addEventListener("click", goHome);
+
+    if(!item.answered){
+      root.querySelectorAll(".opt").forEach(function(el){
+        el.addEventListener("click", function(){ pickOption(el); });
+      });
+    }
+    var nb = byId("nextBtn");
+    if(nb) nb.addEventListener("click", nextQuestion);
+    var sb = byId("skipBtn");
+    if(sb) sb.addEventListener("click", nextQuestion);
+
+    if(timed && !item.answered){
+      startQuestionTimer();
+    }
+  }
+
+  function pickOption(el){
+    var item = currentItem();
+    if(item.answered) return;
+    var origIdx = parseInt(el.getAttribute("data-orig"),10);
+    item.answered = true;
+    item.picked = origIdx;
+    var q = item.q;
+    var isCorrect = (origIdx === q.answerIndex);
+
+    store.attempted++;
+    if(isCorrect){
+      state.score++;
+      store.correct++;
+      var wi = store.wrongIds.indexOf(q.id);
+      if(wi !== -1) store.wrongIds.splice(wi,1);
+    } else {
+      if(store.wrongIds.indexOf(q.id) === -1) store.wrongIds.push(q.id);
+    }
+    saveStore(store);
+
+    if(state.mode === "timed"){
+      nextQuestion();
+    } else {
+      renderQuiz();
+    }
+  }
+
+  function nextQuestion(){
+    clearTimer();
+    if(state.idx < state.items.length-1){
+      state.idx++;
+      renderQuiz();
+    } else {
+      finishSession();
+    }
+  }
+
+  function finishSession(){
+    clearTimer();
+    var total = state.items.length;
+    var pct = total ? Math.round(100*state.score/total) : 0;
+    if(state.subjectKey !== "__review__" && state.mode !== "timed"){
+      var prevBest = store.best[state.subjectKey];
+      if(prevBest === undefined || pct > prevBest){
+        store.best[state.subjectKey] = pct;
+      }
+    }
+    saveStore(store);
+    renderResult(pct, total);
+  }
+
+  function renderResult(pct, total){
+    var attemptedItems = state.items.filter(function(it){ return it.picked !== null; });
+    var wrongItems = attemptedItems.filter(function(it){ return it.picked !== it.q.answerIndex; });
+    var skipped = state.items.length - attemptedItems.length;
+    var emoji = pct>=80 ? "🎉" : (pct>=50 ? "👍" : "💪");
+
+    var html = "";
+    html += '<div class="screen">';
+    html += '<div class="result-hero">';
+    html += '<div class="emoji">'+emoji+'</div>';
+    html += '<div class="cap">'+state.label+' · '+(state.mode==="timed"?"সময় শেষ / সেশন সম্পন্ন":"অনুশীলন শেষ")+'</div>';
+    html += '<div class="big">'+state.score+' / '+total+'</div>';
+    html += '<div class="cap">সঠিক উত্তর '+pct+'%'+(skipped>0?' · এড়িয়ে গেছেন '+skipped+'টি':'')+'</div>';
+    html += '</div>';
+    html += '<div class="content">';
+
+    html += '<div class="btn-col">';
+    if(state.mode === "timed"){
+      html += '<button class="btn" id="retrySame">আবার টাইম গেম খেলুন</button>';
+    } else {
+      html += '<button class="btn" id="retrySame">আবার একই বিষয় অনুশীলন করুন</button>';
+    }
+    html += '<button class="btn secondary" id="goHomeBtn">হোমে ফিরুন</button>';
+    html += '</div>';
+
+    html += '<div class="section-label">ভুল হওয়া প্রশ্নগুলো</div>';
+    if(wrongItems.length === 0){
+      html += '<div class="empty-note">অভিনন্দন! এই সেশনে কোনো ভুল হয়নি।</div>';
+    } else {
+      html += '<div class="review-list">';
+      wrongItems.forEach(function(it){
+        var q = it.q;
+        html += '<div class="review-item">';
+        html += '<div class="rq">'+escapeHtml(q.q)+'</div>';
+        html += '<div class="ra wrong">আপনার উত্তর: '+escapeHtml(q.options[it.picked])+'</div>';
+        html += '<div class="ra correct">সঠিক উত্তর: '+escapeHtml(q.options[q.answerIndex])+'</div>';
+        if(q.explanation){
+          html += '<div class="rex"><b>ব্যাখ্যা:</b> '+escapeHtml(q.explanation)+'</div>';
+        }
+        html += '</div>';
+      });
+      html += '</div>';
+    }
+    html += '</div></div>';
+    root.innerHTML = html;
+
+    var lastSubject = state.subjectKey, lastLabel = state.label, lastMode = state.mode, lastPerQSec = state.perQSec, lastLimit = state.items.length;
+    byId("retrySame").addEventListener("click", function(){
+      if(lastMode === "timed"){
+        startSession(lastSubject, lastLabel, {timed:true, perQSec:lastPerQSec, limit:lastLimit});
+      } else {
+        startSession(lastSubject, lastLabel);
+      }
+    });
+    byId("goHomeBtn").addEventListener("click", goHome);
+  }
+
+  // ---------------- Progress screen ----------------
+  function renderProgress(){
+    var html = "";
+    html += '<div class="screen">';
+    html += '<div class="topbar"><span class="home-tap" id="homeBtn"><span class="ico">⌂</span> হোম</span><span></span></div>';
+    html += '<div class="content">';
+    html += '<h2 style="margin:4px 0 14px;">আমার অগ্রগতি</h2>';
+
+    html += '<div class="stat-row" style="margin-bottom:20px;">';
+    html += '<div class="stat-box"><div class="num">'+store.attempted+'</div><div class="lbl">মোট চেষ্টা</div></div>';
+    var overallPct = store.attempted ? Math.round(100*store.correct/store.attempted) : 0;
+    html += '<div class="stat-box"><div class="num">'+overallPct+'%</div><div class="lbl">সার্বিক সঠিক হার</div></div>';
+    html += '<div class="stat-box"><div class="num">'+store.timedRuns+'</div><div class="lbl">টাইম গেম খেলেছেন</div></div>';
+    html += '</div>';
+
+    html += '<div class="section-label">বিষয়ভিত্তিক সেরা স্কোর</div>';
+    var any = false;
+    SUBJECTS.forEach(function(s){
+      var best = store.best[s.key];
+      if(best === undefined) return;
+      any = true;
+      var color = best>=75 ? "var(--correct)" : (best>=45 ? "var(--amber)" : "var(--wrong)");
+      html += '<div class="prog-item">';
+      html += '<div class="prow"><span class="pname">'+s.name+'</span><span class="ppct">'+best+'%</span></div>';
+      html += '<div class="bar-track"><div class="bar-fill" style="width:'+best+'%;background:'+color+';"></div></div>';
+      html += '<div class="psub">'+countFor(s.key)+'টি প্রশ্নের মধ্যে অনুশীলন করা হয়েছে</div>';
+      html += '</div>';
+    });
+    if(!any){
+      html += '<div class="empty-note">এখনো কোনো বিষয়ে অনুশীলন সম্পন্ন করেননি। প্র্যাকটিস মোড দিয়ে শুরু করুন।</div>';
+    }
+
+    html += '<div class="section-label">ভুল প্রশ্ন ব্যাংক</div>';
+    html += '<div class="prog-item" style="margin-bottom:0;">';
+    html += '<div class="prow"><span class="pname">জমে থাকা ভুল প্রশ্ন</span><span class="ppct" style="color:var(--rose);">'+store.wrongIds.length+' টি</span></div>';
+    html += '<div class="psub">হোম থেকে "ভুল প্রশ্ন রিভিউ" মোডে গিয়ে এগুলো আবার অনুশীলন করুন</div>';
+    html += '</div>';
+
+    html += '</div></div>';
+    root.innerHTML = html;
+    byId("homeBtn").addEventListener("click", goHome);
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
+
+  // ---------------- Gate screen (name + mobile, one-time) ----------------
+  function renderGate(){
+    var html = "";
+    html += '<div class="screen">';
+    html += '<div class="gate-wrap"><div class="gate-card">';
+    html += '<h2 class="serif">স্বাগতম 🙏</h2>';
+    html += '<div class="gate-sub">শুরু করার আগে আপনার নাম ও মোবাইল নম্বরটি দিন। এটা একবারই জিজ্ঞেস করা হবে।</div>';
+    html += '<div class="field-label">আপনার নাম</div>';
+    html += '<input class="field-input" id="gateName" type="text" placeholder="যেমনঃ নাহিদ ইসলাম">';
+    html += '<div class="field-error" id="nameErr">নাম দিন</div>';
+    html += '<div class="field-label">মোবাইল নম্বর</div>';
+    html += '<input class="field-input" id="gateMobile" type="tel" placeholder="যেমনঃ 01XXXXXXXXX">';
+    html += '<div class="field-error" id="mobileErr">সঠিক মোবাইল নম্বর দিন</div>';
+    html += '<button class="btn" id="gateSubmit">শুরু করুন</button>';
+    html += '</div></div></div>';
+    root.innerHTML = html;
+
+    byId("gateSubmit").addEventListener("click", function(){
+      var name = byId("gateName").value.trim();
+      var mobile = sanitizeMobile(byId("gateMobile").value);
+      var ok = true;
+      if(name.length < 2){ byId("nameErr").classList.add("show"); ok = false; } else { byId("nameErr").classList.remove("show"); }
+      if(mobile.length < 10){ byId("mobileErr").classList.add("show"); ok = false; } else { byId("mobileErr").classList.remove("show"); }
+      if(!ok) return;
+      var u = {name:name, mobile:mobile};
+      saveUser(u);
+      currentUser = u;
+      registerUserCloud(u);
+      renderHome();
+    });
+  }
+
+  function renderBlocked(){
+    isBlocked = true;
+    clearTimer();
+    var html = "";
+    html += '<div class="screen">';
+    html += '<div class="gate-wrap"><div class="gate-card" style="text-align:center;">';
+    html += '<div style="font-size:40px;margin-bottom:10px;">🚫</div>';
+    html += '<h2 class="serif" style="color:var(--ink);">প্রবেশাধিকার বন্ধ</h2>';
+    html += '<div class="gate-sub" style="margin-bottom:14px;color:var(--ink);font-weight:600;">এই ওয়েব অ্যাপস টি শুধুমাত্র "DHMS এডমিশন মাস্টার" বইটি যারা কিনেছে তাদের জন্য অনুমোদিত।।</div>';
+    html += '<div class="gate-sub" style="color:var(--ink);font-size:14px;line-height:1.7;"><strong>বিস্তারিত জানতে যোগাযোগ করুন:</strong><br>📱 <strong style="font-size:15px;">01317241734</strong><br><br><strong>অথবা বইটি অর্ডার করুন:</strong><br>🌐 <strong>similia.com.bd</strong></div>';
+    html += '</div></div></div>';
+    root.innerHTML = html;
+  }
+
+  function checkBlocked(){
+    if(!db || !currentUser || isBlocked) return;
+    db.collection("users").doc(sanitizeMobile(currentUser.mobile)).get().then(function(snap){
+      if(snap.exists && snap.data().blocked === true){
+        renderBlocked();
+      }
+    })['catch'](function(){});
+  }
+
+  // Check blocking status every 10 seconds while in session
+  setInterval(function(){
+    if(currentUser && state && !isBlocked) checkBlocked();
+  }, 10000);
+
+  var checkTimeout = null;
+  function checkBlockedAndProceed(){
+    if(!db || !currentUser){ registerUserCloud(currentUser); renderHome(); return; }
+    var resolved = false;
+    
+    checkTimeout = setTimeout(function(){
+      if(!resolved){
+        resolved = true;
+        var mobile = sanitizeMobile(currentUser.mobile);
+        var wasOkBefore = localStorage.getItem("user_blocked_" + mobile + "_cache_ok") === "true";
+        if(wasOkBefore){
+          registerUserCloud(currentUser);
+          renderHome();
+        } else {
+          renderBlocked();
+        }
+      }
+    }, 5000);
+    
+    db.collection("users").doc(sanitizeMobile(currentUser.mobile)).get().then(function(snap){
+      if(resolved) return;
+      resolved = true;
+      clearTimeout(checkTimeout);
+      
+      var isBlocked = snap.exists && snap.data().blocked === true;
+      if(isBlocked){
+        localStorage.setItem("user_blocked_" + sanitizeMobile(currentUser.mobile), "true");
+        localStorage.removeItem("user_blocked_" + sanitizeMobile(currentUser.mobile) + "_cache_ok");
+        renderBlocked();
+      } else {
+        localStorage.removeItem("user_blocked_" + sanitizeMobile(currentUser.mobile));
+        localStorage.setItem("user_blocked_" + sanitizeMobile(currentUser.mobile) + "_cache_ok", "true");
+        registerUserCloud(currentUser);
+        renderHome();
+      }
+    })['catch'](function(){
+      if(resolved) return;
+      resolved = true;
+      clearTimeout(checkTimeout);
+      
+      var mobile = sanitizeMobile(currentUser.mobile);
+      var wasBlocked = localStorage.getItem("user_blocked_" + mobile) === "true";
+      var wasOkBefore = localStorage.getItem("user_blocked_" + mobile + "_cache_ok") === "true";
+      if(wasBlocked){
+        renderBlocked();
+      } else if(!wasOkBefore){
+        renderBlocked();
+      } else {
+        registerUserCloud(currentUser);
+        renderHome();
+      }
+    });
+  }
+
+  function boot(){
+    currentUser = loadUser();
+    if(!currentUser){
+      renderGate();
+    } else {
+      root.innerHTML = '<div class="screen" style="display:flex;align-items:center;justify-content:center;min-height:100vh;"><div style="text-align:center;"><div style="font-size:40px;margin-bottom:14px;">⏳</div><div style="color:var(--ink-muted);font-size:14px;">আপনার অ্যাক্সেস যাচাই করা হচ্ছে...</div></div></div>';
+      checkBlockedAndProceed();
+      loadCustomQuestions();
+    }
+  }
+
+  boot();
+})();
+</script>
+</body>
+</html>
