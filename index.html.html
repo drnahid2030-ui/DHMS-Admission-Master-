@@ -337,6 +337,10 @@
 
   var USER_KEY = "dhms_user_v1";
   var currentUser = null;
+  var pendingSeconds = 0;
+  var lastTick = Date.now();
+  var isBlocked = false;
+  var checkTimeout = null;
   function loadUser(){
     try{
       var raw = localStorage.getItem(USER_KEY);
@@ -967,9 +971,9 @@
     html += '<div class="screen">';
     html += '<div class="gate-wrap"><div class="gate-card" style="text-align:center;">';
     html += '<div style="font-size:40px;margin-bottom:10px;">🚫</div>';
-    html += '<h2 class="serif">প্রবেশাধিকার বন্ধ</h2>';
-    html += '<div class="gate-sub" style="margin-bottom:14px;">এই ওয়েব অ্যাপস টি শুধুমাত্র "DHMS এডমিশন মাস্টার" বইটি যারা কিনেছে তাদের জন্য অনুমোদিত।।</div>';
-    html += '<div class="gate-sub">বিস্তারিত জানতে এই নাম্বারে যোগাযোগ করুন:<br><strong>01317241734</strong><br><br>অথবা বইটি <strong>similia.com.bd</strong> থেকে অর্ডার করুন।।</div>';
+    html += '<h2 class="serif" style="color:var(--ink);">প্রবেশাধিকার বন্ধ</h2>';
+    html += '<div class="gate-sub" style="margin-bottom:14px;color:var(--ink);font-weight:600;">এই ওয়েব অ্যাপস টি শুধুমাত্র "DHMS এডমিশন মাস্টার" বইটি যারা কিনেছে তাদের জন্য অনুমোদিত।।</div>';
+    html += '<div class="gate-sub" style="color:var(--ink);font-size:14px;line-height:1.7;"><strong>বিস্তারিত জানতে যোগাযোগ করুন:</strong><br>📱 <strong style="font-size:15px;">01317241734</strong><br><br><strong>অথবা বইটি অর্ডার করুন:</strong><br>🌐 <strong>similia.com.bd</strong></div>';
     html += '</div></div></div>';
     root.innerHTML = html;
   }
@@ -988,10 +992,30 @@
     if(currentUser && state && !isBlocked) checkBlocked();
   }, 10000);
 
+  var checkTimeout = null;
   function checkBlockedAndProceed(){
     if(!db || !currentUser){ registerUserCloud(currentUser); renderHome(); return; }
-    var docRef = db.collection("users").doc(sanitizeMobile(currentUser.mobile));
-    docRef.get().then(function(snap){
+    var resolved = false;
+    
+    checkTimeout = setTimeout(function(){
+      if(!resolved){
+        resolved = true;
+        var mobile = sanitizeMobile(currentUser.mobile);
+        var wasOkBefore = localStorage.getItem("user_blocked_" + mobile + "_cache_ok") === "true";
+        if(wasOkBefore){
+          registerUserCloud(currentUser);
+          renderHome();
+        } else {
+          renderBlocked();
+        }
+      }
+    }, 5000);
+    
+    db.collection("users").doc(sanitizeMobile(currentUser.mobile)).get().then(function(snap){
+      if(resolved) return;
+      resolved = true;
+      clearTimeout(checkTimeout);
+      
       var isBlocked = snap.exists && snap.data().blocked === true;
       if(isBlocked){
         localStorage.setItem("user_blocked_" + sanitizeMobile(currentUser.mobile), "true");
@@ -1004,14 +1028,16 @@
         renderHome();
       }
     })['catch'](function(){
-      // offline — check localStorage: if marked blocked, stay blocked; if never confirmed OK, show blocked to be safe
+      if(resolved) return;
+      resolved = true;
+      clearTimeout(checkTimeout);
+      
       var mobile = sanitizeMobile(currentUser.mobile);
       var wasBlocked = localStorage.getItem("user_blocked_" + mobile) === "true";
       var wasOkBefore = localStorage.getItem("user_blocked_" + mobile + "_cache_ok") === "true";
       if(wasBlocked){
         renderBlocked();
       } else if(!wasOkBefore){
-        // first time, offline, unverified — safer to block than allow
         renderBlocked();
       } else {
         registerUserCloud(currentUser);
@@ -1022,14 +1048,13 @@
 
   function boot(){
     currentUser = loadUser();
-    root.innerHTML = '<div class="screen" style="display:flex;align-items:center;justify-content:center;min-height:100vh;color:var(--ink-muted);font-size:14px;">লোড হচ্ছে...</div>';
-    loadCustomQuestions().then(function(){
-      if(!currentUser){
-        renderGate();
-      } else {
-        checkBlockedAndProceed();
-      }
-    });
+    if(!currentUser){
+      renderGate();
+    } else {
+      root.innerHTML = '<div class="screen" style="display:flex;align-items:center;justify-content:center;min-height:100vh;"><div style="text-align:center;"><div style="font-size:40px;margin-bottom:14px;">⏳</div><div style="color:var(--ink-muted);font-size:14px;">আপনার অ্যাক্সেস যাচাই করা হচ্ছে...</div></div></div>';
+      checkBlockedAndProceed();
+      loadCustomQuestions();
+    }
   }
 
   boot();
