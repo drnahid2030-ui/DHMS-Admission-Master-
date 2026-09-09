@@ -960,7 +960,6 @@
     });
   }
 
-  // ---------------- Blocked screen ----------------
   function renderBlocked(){
     isBlocked = true;
     var html = "";
@@ -968,24 +967,41 @@
     html += '<div class="gate-wrap"><div class="gate-card" style="text-align:center;">';
     html += '<div style="font-size:40px;margin-bottom:10px;">🚫</div>';
     html += '<h2 class="serif">প্রবেশাধিকার বন্ধ</h2>';
-    html += '<div class="gate-sub">দুঃখিত, আপনার অ্যাকাউন্টের জন্য এই অ্যাপ ব্যবহারের অনুমতি বর্তমানে বন্ধ রাখা হয়েছে। বিস্তারিত জানতে অ্যাডমিনের সাথে যোগাযোগ করুন।</div>';
+    html += '<div class="gate-sub" style="margin-bottom:14px;">এই ওয়েব অ্যাপস টি শুধুমাত্র "DHMS এডমিশন মাস্টার" বইটি যারা কিনেছে তাদের জন্য অনুমোদিত।।</div>';
+    html += '<div class="gate-sub">বিস্তারিত জানতে এই নাম্বারে যোগাযোগ করুন:<br><strong>01317241734</strong><br><br>অথবা বইটি <strong>similia.com.bd</strong> থেকে অর্ডার করুন।।</div>';
     html += '</div></div></div>';
     root.innerHTML = html;
   }
 
   function checkBlockedAndProceed(){
     if(!db || !currentUser){ registerUserCloud(currentUser); renderHome(); return; }
-    db.collection("users").doc(sanitizeMobile(currentUser.mobile)).get().then(function(snap){
-      if(snap.exists && snap.data().blocked === true){
+    var docRef = db.collection("users").doc(sanitizeMobile(currentUser.mobile));
+    docRef.get().then(function(snap){
+      var isBlocked = snap.exists && snap.data().blocked === true;
+      if(isBlocked){
+        localStorage.setItem("user_blocked_" + sanitizeMobile(currentUser.mobile), "true");
+        localStorage.removeItem("user_blocked_" + sanitizeMobile(currentUser.mobile) + "_cache_ok");
+        renderBlocked();
+      } else {
+        localStorage.removeItem("user_blocked_" + sanitizeMobile(currentUser.mobile));
+        localStorage.setItem("user_blocked_" + sanitizeMobile(currentUser.mobile) + "_cache_ok", "true");
+        registerUserCloud(currentUser);
+        renderHome();
+      }
+    })['catch'](function(){
+      // offline — check localStorage: if marked blocked, stay blocked; if never confirmed OK, show blocked to be safe
+      var mobile = sanitizeMobile(currentUser.mobile);
+      var wasBlocked = localStorage.getItem("user_blocked_" + mobile) === "true";
+      var wasOkBefore = localStorage.getItem("user_blocked_" + mobile + "_cache_ok") === "true";
+      if(wasBlocked){
+        renderBlocked();
+      } else if(!wasOkBefore){
+        // first time, offline, unverified — safer to block than allow
         renderBlocked();
       } else {
         registerUserCloud(currentUser);
         renderHome();
       }
-    })['catch'](function(){
-      // offline or read error — fail open so connectivity issues never lock a legitimate user out
-      registerUserCloud(currentUser);
-      renderHome();
     });
   }
 
