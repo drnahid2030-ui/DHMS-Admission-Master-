@@ -136,6 +136,30 @@
         </select>
       </div>
       <div class="form-row">
+        <div class="form-label">অধ্যায়/টপিক</div>
+        <input class="form-input" id="qTopic" type="text" placeholder="যেমনঃ Trigonometry, বিশেষ্য, রক্ত সংবহন">
+      </div>
+      <div class="form-row">
+        <div class="form-label">কঠিনতা স্তর</div>
+        <div class="radio-row">
+          <label class="radio-opt"><input type="radio" name="qDifficulty" value="সহজ" checked> সহজ</label>
+          <label class="radio-opt"><input type="radio" name="qDifficulty" value="মধ্যম"> মধ্যম</label>
+          <label class="radio-opt"><input type="radio" name="qDifficulty" value="কঠিন"> কঠিন</label>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-label">Tags (comma দিয়ে আলাদা করুন)</div>
+        <input class="form-input" id="qTags" type="text" placeholder="যেমনঃ গুরুত্বপূর্ণ, DHMS ২০২৩, নতুন">
+      </div>
+      <div class="form-row">
+        <div class="form-label">উৎস/রেফারেন্স</div>
+        <input class="form-input" id="qSource" type="text" placeholder="যেমনঃ বই পৃষ্ঠা ১৫, লেকচার নোট">
+      </div>
+      <div class="form-row">
+        <div class="form-label">Admin নোট (শুধুমাত্র admin দেখতে পারবে)</div>
+        <textarea class="form-textarea" id="qAdminNote" placeholder="যেমনঃ এই প্রশ্ন ২০২৪ DHMS-এ এসেছে..."></textarea>
+      </div>
+      <div class="form-row">
         <div class="form-label">প্রশ্ন</div>
         <textarea class="form-textarea" id="qText" placeholder="প্রশ্নটি এখানে লিখুন..."></textarea>
       </div>
@@ -171,68 +195,11 @@
 
   <div class="panel" id="modelTestPanel">
     <div style="margin-bottom:20px;">
-      <div style="font-size:13px;color:var(--ink-muted);margin-bottom:10px;">📝 মডেল টেস্ট ম্যানেজ করুন — স্টুডেন্টরা এখানে ১০০টি প্রশ্নের পূর্ণ পরীক্ষা দেবে</div>
+      <div style="font-size:13px;color:var(--ink-muted);margin-bottom:10px;">🎯 মডেল টেস্ট ম্যানেজমেন্ট সিস্টেম</div>
+      <button class="submit-btn" id="createModelTestBtn" style="background:var(--teal);font-weight:600;">➕ নতুন মডেল টেস্ট তৈরি করুন</button>
     </div>
-    <div class="form-card">
-      <div class="form-row">
-        <div class="form-label">বিষয় (ক্যাটেগরি)</div>
-        <select class="form-select" id="mtSubject">
-          <option value="সাধারণ">সাধারণ</option>
-          <option value="বাংলা">বাংলা</option>
-          <option value="English">English</option>
-          <option value="গণিত">গণিত</option>
-          <option value="বিজ্ঞান">বিজ্ঞান</option>
-          <option value="সামাজিক বিজ্ঞান">সামাজিক বিজ্ঞান</option>
-        </select>
-      </div>
-      <div class="form-row">
-        <div class="form-label">প্রশ্ন</div>
-        <textarea class="form-textarea" id="mtQText" placeholder="প্রশ্নটি এখানে লিখুন..."></textarea>
-      </div>
-      <div class="form-row">
-        <div class="form-label">অপশনসমূহ</div>
-        <div class="opt-grid">
-          <div class="opt-field"><span class="opt-letter">ক</span><input class="form-input" id="mtOptA" placeholder="অপশন ক"></div>
-          <div class="opt-field"><span class="opt-letter">খ</span><input class="form-input" id="mtOptB" placeholder="অপশন খ"></div>
-          <div class="opt-field"><span class="opt-letter">গ</span><input class="form-input" id="mtOptC" placeholder="অপশন গ"></div>
-          <div class="opt-field"><span class="opt-letter">ঘ</span><input class="form-input" id="mtOptD" placeholder="অপশন ঘ"></div>
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-label">সঠিক উত্তর</div>
-        <div class="radio-row">
-          <label class="radio-opt"><input type="radio" name="mtAnswer" value="A" checked> ক</label>
-          <label class="radio-opt"><input type="radio" name="mtAnswer" value="B"> খ</label>
-          <label class="radio-opt"><input type="radio" name="mtAnswer" value="C"> গ</label>
-          <label class="radio-opt"><input type="radio" name="mtAnswer" value="D"> ঘ</label>
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-label">মডেল টেস্ট নম্বর (যেমনঃ 01, 02, 03)</div>
-        <input class="form-input" id="mtNumber" type="text" placeholder="যেমনঃ 01">
-      </div>
-      <div class="form-row">
-        <div class="form-label">ব্যাখ্যা (ঐচ্ছিক)</div>
-        <textarea class="form-textarea" id="mtExplain" placeholder="সংক্ষিপ্ত ব্যাখ্যা"></textarea>
-      </div>
-      <button class="submit-btn" id="mtSubmitBtn">মডেল টেস্টে যোগ করুন</button>
-      <div class="form-msg" id="mtFormMsg"></div>
-    </div>
-
-    <div style="margin-top:20px;">
-      <div style="font-size:13px;color:var(--ink-muted);font-weight:600;margin-bottom:10px;">📊 মডেল টেস্ট অগ্রগতি</div>
-      <div class="form-card">
-        <div class="stat-row">
-          <div class="stat-box"><div class="num" id="mtCount">0</div><div class="lbl">মোট প্রশ্ন</div></div>
-          <div class="stat-box"><div class="num" style="font-size:18px;" id="mtProgress">0%</div><div class="lbl">সম্পূর্ণতা</div></div>
-        </div>
-      </div>
-    </div>
-
-    <div style="margin-top:20px;">
-      <div style="font-size:13px;color:var(--ink-muted);font-weight:600;margin-bottom:10px;">📋 মডেল টেস্ট প্রশ্নসমূহ</div>
-      <div id="mtQList"><div class="loading">লোড হচ্ছে...</div></div>
-    </div>
+    <div id="modelTestListContainer"></div>
+    <div id="modelTestEditPanel" style="display:none;"></div>
   </div>
 </div>
 
@@ -432,29 +399,45 @@
     var optC = byId("qOptC").value.trim();
     var optD = byId("qOptD").value.trim();
     var answer = (document.querySelector('input[name="qAnswer"]:checked')||{}).value;
+    var topic = byId("qTopic").value.trim();
+    var difficulty = (document.querySelector('input[name="qDifficulty"]:checked')||{}).value;
+    var tags = byId("qTags").value.trim();
+    var source = byId("qSource").value.trim();
+    var adminNote = byId("qAdminNote").value.trim();
     var explanation = byId("qExplain").value.trim();
 
     if(!qText || !optA || !optB || !optC || !optD || !answer){
-      showFormMsg("সব ঘর (ব্যাখ্যা ছাড়া) পূরণ করুন।", true);
+      showFormMsg("সব ঘর (অন্যান্য ফিল্ড ছাড়া) পূরণ করুন।", true);
       return;
     }
 
     var btn = byId("qSubmitBtn");
     btn.disabled = true;
-    db.collection("custom_questions").add({
+    var data = {
       subject: subject,
       q: qText,
       options: [optA, optB, optC, optD],
       answer: answer,
       explanation: explanation,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    }).then(function(){
+    };
+    if(topic) data.topic = topic;
+    if(difficulty) data.difficulty = difficulty;
+    if(tags) data.tags = tags.split(",").map(function(t){return t.trim();});
+    if(source) data.source = source;
+    if(adminNote) data.adminNote = adminNote;
+    
+    db.collection("custom_questions").add(data).then(function(){
       showFormMsg("প্রশ্ন যোগ হয়েছে ✅", false);
       byId("qText").value = "";
       byId("qOptA").value = "";
       byId("qOptB").value = "";
       byId("qOptC").value = "";
       byId("qOptD").value = "";
+      byId("qTopic").value = "";
+      byId("qTags").value = "";
+      byId("qSource").value = "";
+      byId("qAdminNote").value = "";
       byId("qExplain").value = "";
       btn.disabled = false;
       loadCustomQuestions();
@@ -503,91 +486,223 @@
     byId("modelTestPanel").classList.add("active");
     byId("usersPanel").classList.remove("active");
     byId("questionsPanel").classList.remove("active");
-    loadModelTestData();
+    loadModelTestList();
   });
 
-  byId("mtSubmitBtn").addEventListener("click", function(){
-    var qText = byId("mtQText").value.trim();
-    var optA = byId("mtOptA").value.trim();
-    var optB = byId("mtOptB").value.trim();
-    var optC = byId("mtOptC").value.trim();
-    var optD = byId("mtOptD").value.trim();
-    var answer = (document.querySelector('input[name="mtAnswer"]:checked')||{}).value;
-    var mtNumber = byId("mtNumber").value.trim();
-    var explanation = byId("mtExplain").value.trim();
+  // ============ মডেল টেস্ট ম্যানেজমেন্ট ============
+  var CATEGORY_QUOTAS = {
+    "Bangla": 20,
+    "English": 20,
+    "Math": 10,
+    "General Science": 20,
+    "General Knowledge": 20
+  };
+  var currentEditingModelTestId = null;
 
-    if(!qText || !optA || !optB || !optC || !optD || !answer){
-      byId("mtFormMsg").textContent = "সব ঘর (মডেল টেস্ট নম্বর এবং ব্যাখ্যা ছাড়া) পূরণ করুন।";
-      byId("mtFormMsg").className = "form-msg err";
-      return;
-    }
-
-    var btn = byId("mtSubmitBtn");
-    btn.disabled = true;
-    var data = {
-      q: qText,
-      options: [optA, optB, optC, optD],
-      answer: answer,
-      explanation: explanation,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    };
-    if(mtNumber) data.model_test_no = mtNumber;
-    db.collection("model_test_questions").add(data).then(function(){
-      byId("mtFormMsg").textContent = "প্রশ্ন যোগ হয়েছে ✅";
-      byId("mtFormMsg").className = "form-msg ok";
-      byId("mtQText").value = "";
-      byId("mtOptA").value = "";
-      byId("mtOptB").value = "";
-      byId("mtOptC").value = "";
-      byId("mtOptD").value = "";
-      byId("mtNumber").value = "";
-      byId("mtExplain").value = "";
-      btn.disabled = false;
-      loadModelTestData();
-    })['catch'](function(err){
-      byId("mtFormMsg").textContent = "ব্যর্থ হয়েছে: " + err.message;
-      byId("mtFormMsg").className = "form-msg err";
-      btn.disabled = false;
+  byId("createModelTestBtn").addEventListener("click", function(){
+    db.collection("model_tests").get().then(function(snap){
+      var nextNum = snap.size + 1;
+      var numStr = String(nextNum).padStart(2, '0');
+      var testName = "Model Test " + numStr;
+      db.collection("model_tests").add({
+        name: testName,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      }).then(function(docRef){
+        currentEditingModelTestId = docRef.id;
+        renderModelTestEdit(docRef.id, testName);
+      })['catch'](function(err){
+        alert("ত্রুটি: " + err.message);
+      });
     });
   });
 
-  function loadModelTestData(){
-    var holder = byId("mtQList");
+  function loadModelTestList(){
+    var holder = byId("modelTestListContainer");
     holder.innerHTML = '<div class="loading">লোড হচ্ছে...</div>';
-    db.collection("model_test_questions").orderBy("createdAt", "desc").get().then(function(snap){
-      var count = snap.size;
-      var progress = Math.min(100, Math.round(count*100/100));
-      byId("mtCount").textContent = count;
-      byId("mtProgress").textContent = progress + "%";
-      
-      if(count === 0){
-        holder.innerHTML = '<div class="empty">এখনো কোনো প্রশ্ন যোগ করা হয়নি।</div>';
+    db.collection("model_tests").orderBy("createdAt", "desc").get().then(function(snap){
+      if(snap.empty){
+        holder.innerHTML = '<div class="empty">এখনো কোনো মডেল টেস্ট তৈরি করা হয়নি।</div>';
         return;
       }
       var html = "";
       snap.forEach(function(doc){
         var d = doc.data();
-        html += '<div class="qlist-item">';
+        html += '<div class="form-card" style="margin-bottom:16px;cursor:pointer;" data-test-id="'+doc.id+'">';
+        html += '<div style="display:flex;justify-content:space-between;align-items:center;">';
+        html += '<div><div style="font-size:18px;font-weight:700;color:var(--teal);">'+escapeHtml(d.name)+'</div></div>';
+        html += '<button class="submit-btn" style="padding:8px 14px;font-size:12px;">সম্পাদনা →</button>';
+        html += '</div>';
+        html += '</div>';
+      });
+      holder.innerHTML = html;
+      holder.querySelectorAll(".form-card[data-test-id]").forEach(function(card){
+        card.addEventListener("click", function(){
+          var testId = card.getAttribute("data-test-id");
+          db.collection("model_tests").doc(testId).get().then(function(doc){
+            renderModelTestEdit(testId, doc.data().name);
+          });
+        });
+      });
+    })['catch'](function(err){
+      holder.innerHTML = '<div class="empty">লোড ব্যর্থ।</div>';
+    });
+  }
+
+  function renderModelTestEdit(modelTestId, testName){
+    currentEditingModelTestId = modelTestId;
+    var holder = byId("modelTestEditPanel");
+    holder.style.display = "block";
+    
+    // Progress stats
+    holder.innerHTML = '<div style="margin-bottom:20px;"><button class="btn-secondary" id="backToMtList">← ফিরে যান</button></div>';
+    holder.innerHTML += '<div style="background:var(--teal);color:white;padding:20px;border-radius:12px;text-align:center;margin-bottom:20px;"><div style="font-size:24px;font-weight:700;">'+escapeHtml(testName)+'</div></div>';
+    holder.innerHTML += '<div id="mtCategoryStats" class="form-card" style="margin-bottom:20px;"></div>';
+    holder.innerHTML += '<div class="form-card" id="mtAddQuestionForm"></div>';
+    holder.innerHTML += '<div id="mtQuestionsList" style="margin-top:20px;"></div>';
+
+    byId("backToMtList").addEventListener("click", loadModelTestList);
+    
+    // Load category stats
+    loadCategoryStats(modelTestId);
+    // Render add question form
+    renderAddQuestionForm(modelTestId);
+    // Load questions
+    loadModelTestQuestions(modelTestId);
+  }
+
+  function loadCategoryStats(modelTestId){
+    db.collection("model_test_questions").where("model_test_id", "==", modelTestId).get().then(function(snap){
+      var stats = {};
+      Object.keys(CATEGORY_QUOTAS).forEach(function(cat){ stats[cat] = 0; });
+      snap.forEach(function(doc){
+        var d = doc.data();
+        if(stats[d.category] !== undefined) stats[d.category]++;
+      });
+      
+      var html = "<div style='margin-bottom:14px;'><strong>বিভাগ অনুযায়ী অগ্রগতি:</strong></div>";
+      Object.keys(CATEGORY_QUOTAS).forEach(function(cat){
+        var count = stats[cat];
+        var quota = CATEGORY_QUOTAS[cat];
+        var pct = Math.round(count*100/quota);
+        var color = count === quota ? "var(--teal)" : "var(--amber)";
+        html += '<div style="margin-bottom:10px;">';
+        html += '<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;"><span>'+escapeHtml(cat)+'</span><span style="font-weight:600;color:'+color+';">'+count+'/'+quota+'</span></div>';
+        html += '<div style="height:6px;background:#eee;border-radius:3px;overflow:hidden;"><div style="height:100%;width:'+pct+'%;background:'+color+';"></div></div>';
+        html += '</div>';
+      });
+      byId("mtCategoryStats").innerHTML = html;
+    });
+  }
+
+  function renderAddQuestionForm(modelTestId){
+    var form = '<div class="form-row"><div class="form-label">বিভাগ</div><select class="form-select" id="mtCategory">';
+    Object.keys(CATEGORY_QUOTAS).forEach(function(cat){
+      form += '<option value="'+escapeHtml(cat)+'">'+escapeHtml(cat)+'</option>';
+    });
+    form += '</select></div>';
+    form += '<div class="form-row"><div class="form-label">প্রশ্ন</div><textarea class="form-textarea" id="mtNewQText" placeholder="প্রশ্নটি লিখুন..."></textarea></div>';
+    form += '<div class="form-row"><div class="form-label">অপশনসমূহ</div>';
+    form += '<div class="opt-grid">';
+    form += '<div class="opt-field"><span class="opt-letter">ক</span><input class="form-input" id="mtNewOptA" placeholder="ক"></div>';
+    form += '<div class="opt-field"><span class="opt-letter">খ</span><input class="form-input" id="mtNewOptB" placeholder="খ"></div>';
+    form += '<div class="opt-field"><span class="opt-letter">গ</span><input class="form-input" id="mtNewOptC" placeholder="গ"></div>';
+    form += '<div class="opt-field"><span class="opt-letter">ঘ</span><input class="form-input" id="mtNewOptD" placeholder="ঘ"></div>';
+    form += '</div></div>';
+    form += '<div class="form-row"><div class="form-label">সঠিক উত্তর</div><div class="radio-row">';
+    form += '<label class="radio-opt"><input type="radio" name="mtNewAnswer" value="A" checked> ক</label>';
+    form += '<label class="radio-opt"><input type="radio" name="mtNewAnswer" value="B"> খ</label>';
+    form += '<label class="radio-opt"><input type="radio" name="mtNewAnswer" value="C"> গ</label>';
+    form += '<label class="radio-opt"><input type="radio" name="mtNewAnswer" value="D"> ঘ</label>';
+    form += '</div></div>';
+    form += '<div class="form-row"><div class="form-label">ব্যাখ্যা (ঐচ্ছিক)</div><textarea class="form-textarea" id="mtNewExplain" placeholder="ব্যাখ্যা..."></textarea></div>';
+    form += '<button class="submit-btn" id="mtAddQuestionBtn">প্রশ্ন যোগ করুন</button>';
+    form += '<div class="form-msg" id="mtAddMsg"></div>';
+    byId("mtAddQuestionForm").innerHTML = form;
+
+    byId("mtAddQuestionBtn").addEventListener("click", function(){
+      var cat = byId("mtCategory").value;
+      var qText = byId("mtNewQText").value.trim();
+      var optA = byId("mtNewOptA").value.trim();
+      var optB = byId("mtNewOptB").value.trim();
+      var optC = byId("mtNewOptC").value.trim();
+      var optD = byId("mtNewOptD").value.trim();
+      var answer = (document.querySelector('input[name="mtNewAnswer"]:checked')||{}).value;
+      var explain = byId("mtNewExplain").value.trim();
+
+      if(!qText || !optA || !optB || !optC || !optD || !answer){
+        byId("mtAddMsg").textContent = "সব ঘর পূরণ করুন (ব্যাখ্যা ছাড়া)";
+        byId("mtAddMsg").className = "form-msg err";
+        return;
+      }
+
+      var btn = byId("mtAddQuestionBtn");
+      btn.disabled = true;
+      db.collection("model_test_questions").add({
+        model_test_id: modelTestId,
+        model_test_name: currentEditingTestName,
+        category: cat,
+        q: qText,
+        options: [optA, optB, optC, optD],
+        answer: answer,
+        explanation: explain,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      }).then(function(){
+        byId("mtAddMsg").textContent = "✅ প্রশ্ন যোগ হয়েছে";
+        byId("mtAddMsg").className = "form-msg ok";
+        byId("mtNewQText").value = "";
+        byId("mtNewOptA").value = "";
+        byId("mtNewOptB").value = "";
+        byId("mtNewOptC").value = "";
+        byId("mtNewOptD").value = "";
+        byId("mtNewExplain").value = "";
+        btn.disabled = false;
+        loadCategoryStats(modelTestId);
+        loadModelTestQuestions(modelTestId);
+      })['catch'](function(err){
+        byId("mtAddMsg").textContent = "ব্যর্থ: " + err.message;
+        byId("mtAddMsg").className = "form-msg err";
+        btn.disabled = false;
+      });
+    });
+  }
+
+  var currentEditingTestName = null;
+  function loadModelTestQuestions(modelTestId){
+    db.collection("model_tests").doc(modelTestId).get().then(function(doc){
+      currentEditingTestName = doc.data().name;
+    });
+
+    db.collection("model_test_questions").where("model_test_id", "==", modelTestId).orderBy("createdAt", "desc").get().then(function(snap){
+      var holder = byId("mtQuestionsList");
+      if(snap.empty){
+        holder.innerHTML = '<div class="empty">এখনো কোনো প্রশ্ন যোগ করা হয়নি।</div>';
+        return;
+      }
+      var html = '<div style="font-size:13px;color:var(--ink-muted);font-weight:600;margin-bottom:10px;">📋 প্রশ্ন তালিকা ('+ snap.size +'টি)</div>';
+      snap.forEach(function(doc){
+        var d = doc.data();
+        html += '<div class="qlist-item" style="margin-bottom:8px;">';
         html += '<button class="qdel" data-id="'+doc.id+'">মুছুন</button>';
         html += '<div class="qtxt">'+escapeHtml(d.q)+'</div>';
-        var metaText = 'সঠিক উত্তর: '+escapeHtml(d.answer);
-        if(d.model_test_no) metaText = 'মডেল টেস্ট '+escapeHtml(d.model_test_no)+' · '+metaText;
-        html += '<div class="qmeta">'+metaText+'</div>';
+        html += '<div class="qmeta">'+escapeHtml(d.category)+' · উত্তর: '+escapeHtml(d.answer)+'</div>';
         html += '</div>';
       });
       holder.innerHTML = html;
       holder.querySelectorAll(".qdel").forEach(function(btn){
         btn.addEventListener("click", function(){
-          if(!confirm("এই প্রশ্নটি মডেল টেস্ট থেকে মুছে ফেলতে চান?")) return;
+          if(!confirm("এই প্রশ্নটি মুছবেন?")) return;
           db.collection("model_test_questions").doc(btn.getAttribute("data-id"))['delete']().then(function(){
-            loadModelTestData();
-          })['catch'](function(err){ alert("ব্যর্থ হয়েছে: " + err.message); });
+            loadCategoryStats(modelTestId);
+            loadModelTestQuestions(modelTestId);
+          })['catch'](function(err){ alert("ব্যর্থ: "+err.message); });
         });
       });
     })['catch'](function(err){
-      holder.innerHTML = '<div class="empty">ডেটা লোড করা যায়নি।<br>'+escapeHtml(err.message)+'</div>';
+      byId("mtQuestionsList").innerHTML = '<div class="empty">লোড ব্যর্থ।</div>';
     });
   }
+
+
 })();
 </script>
 </body>

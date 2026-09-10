@@ -537,18 +537,60 @@
       renderHome();
       return;
     }
-    root.innerHTML = '<div class="screen" style="display:flex;align-items:center;justify-content:center;min-height:100vh;"><div style="text-align:center;"><div style="font-size:40px;margin-bottom:14px;">⏳</div><div style="color:var(--ink-muted);font-size:14px;">মডেল টেস্ট লোড হচ্ছে...</div></div></div>';
-    db.collection("model_test_questions").get().then(function(snap){
+    root.innerHTML = '<div class="screen" style="display:flex;align-items:center;justify-content:center;min-height:100vh;"><div style="text-align:center;"><div style="font-size:40px;margin-bottom:14px;">📋</div><div style="color:var(--ink-muted);font-size:14px;">মডেল টেস্ট লোড হচ্ছে...</div></div></div>';
+    db.collection("model_tests").orderBy("createdAt", "desc").get().then(function(snap){
       if(snap.empty){
         renderHome();
         return;
       }
+      var tests = [];
+      snap.forEach(function(doc){
+        tests.push({id: doc.id, name: doc.data().name, createdAt: doc.data().createdAt});
+      });
+      renderModelTestList(tests);
+    })['catch'](function(err){
+      renderHome();
+    });
+  }
+
+  function renderModelTestList(tests){
+    var html = '<div class="screen">';
+    html += '<div style="padding:16px;background:var(--teal);color:white;text-align:center;font-size:18px;font-weight:600;">📋 মডেল টেস্ট নির্বাচন করুন</div>';
+    html += '<div style="padding:16px;">';
+    tests.forEach(function(test){
+      html += '<div class="mode-card" style="cursor:pointer;margin-bottom:14px;" data-test-id="'+test.id+'">';
+      html += '<div style="font-size:28px;">🎯</div>';
+      html += '<div class="title">'+escapeHtml(test.name)+'</div>';
+      html += '<div class="desc">সম্পূর্ণ পরীক্ষা দিন</div>';
+      html += '</div>';
+    });
+    html += '</div>';
+    html += '<div style="padding:12px;text-align:center;"><button class="btn-secondary" id="backFromModelList" style="padding:10px 20px;">← ফিরে যান</button></div>';
+    html += '</div>';
+    root.innerHTML = html;
+    
+    root.querySelectorAll(".mode-card[data-test-id]").forEach(function(card){
+      card.addEventListener("click", function(){
+        startModelTestById(card.getAttribute("data-test-id"));
+      });
+    });
+    byId("backFromModelList").addEventListener("click", renderHome);
+  }
+
+  function startModelTestById(modelTestId){
+    root.innerHTML = '<div class="screen" style="display:flex;align-items:center;justify-content:center;min-height:100vh;"><div style="text-align:center;"><div style="font-size:40px;margin-bottom:14px;">⏳</div><div style="color:var(--ink-muted);font-size:14px;">প্রশ্ন লোড হচ্ছে...</div></div></div>';
+    db.collection("model_test_questions").where("model_test_id", "==", modelTestId).get().then(function(snap){
+      if(snap.empty){
+        alert("এই টেস্টে কোনো প্রশ্ন নেই।");
+        startModelTest();
+        return;
+      }
       var pool = [];
-      var modelTestNo = null;
+      var testName = null;
       snap.forEach(function(doc){
         var d = doc.data();
         if(d && d.q && Array.isArray(d.options) && d.options.length===4 && d.answer){
-          if(!modelTestNo && d.model_test_no) modelTestNo = d.model_test_no;
+          if(!testName && d.model_test_name) testName = d.model_test_name;
           pool.push({
             id: "mt_" + doc.id,
             subject: "modeltest",
@@ -561,7 +603,8 @@
         }
       });
       if(pool.length === 0){
-        renderHome();
+        alert("এই টেস্টে কোনো প্রশ্ন নেই।");
+        startModelTest();
         return;
       }
       pool = shuffle(pool);
@@ -569,7 +612,7 @@
         var order = shuffle([0,1,2,3]);
         return {q:q, order:order, answered:false, picked:null};
       });
-      var label = (modelTestNo ? "মডেল টেস্ট " + modelTestNo : "মডেল টেস্ট") + " (" + pool.length + "টি প্রশ্ন)";
+      var label = (testName || "মডেল টেস্ট") + " (" + pool.length + "টি প্রশ্ন)";
       state = {
         mode: "modeltest",
         subjectKey: "modeltest",
@@ -584,7 +627,7 @@
       clearTimer();
       renderQuiz();
     })['catch'](function(err){
-      renderHome();
+      startModelTest();
     });
   }
 
