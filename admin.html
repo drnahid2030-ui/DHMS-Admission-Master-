@@ -608,7 +608,10 @@
     loadQuestionsByCategory(modelTestId);
   }
 
-  function loadCategoryStats(modelTestId){
+  function loadCategoryStats(modelTestId, testName){
+    var statsContainer = byId("mtCategoryStats");
+    statsContainer.innerHTML = '<div style="text-align:center;padding:20px;"><div style="font-size:18px;">⏳</div>লোড হচ্ছে...</div>';
+    
     db.collection("model_test_questions").where("model_test_id", "==", modelTestId).get().then(function(snap){
       var stats = {};
       Object.keys(CATEGORY_QUOTAS).forEach(function(cat){ stats[cat] = 0; });
@@ -623,18 +626,22 @@
         var quota = CATEGORY_QUOTAS[cat];
         var pct = Math.round(count*100/quota);
         var color = count === quota ? "var(--teal)" : "var(--amber)";
-        html += '<div style="margin-bottom:10px;cursor:pointer;padding:8px;border-radius:8px;background:#f5f5f5;transition:all 0.2s;" class="cat-stat" data-cat="'+cat+'">';
+        html += '<div style="margin-bottom:10px;padding:12px;border-radius:8px;background:#f9f9f9;border:1px solid #ddd;cursor:pointer;transition:all 0.2s;position:relative;" class="cat-stat" data-mtid="'+modelTestId+'" data-cat="'+escapeHtml(cat)+'">';
         html += '<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;"><span style="font-weight:600;">'+escapeHtml(cat)+'</span><span style="font-weight:600;color:'+color+';">'+count+'/'+quota+'</span></div>';
         html += '<div style="height:6px;background:#eee;border-radius:3px;overflow:hidden;"><div style="height:100%;width:'+pct+'%;background:'+color+';"></div></div>';
         html += '</div>';
       });
-      byId("mtCategoryStats").innerHTML = html;
+      statsContainer.innerHTML = html;
       
-      byId("mtCategoryStats").querySelectorAll(".cat-stat").forEach(function(el){
-        el.addEventListener("click", function(){
-          var cat = el.getAttribute("data-cat");
-          showCategoryQuestions(modelTestId, cat);
-        });
+      // Attach event listeners with event delegation
+      statsContainer.addEventListener("click", function(e){
+        var target = e.target.closest(".cat-stat");
+        if(target){
+          e.stopPropagation();
+          var cat = target.getAttribute("data-cat");
+          var mtid = target.getAttribute("data-mtid");
+          showCategoryQuestions(mtid, cat);
+        }
       });
     });
   }
