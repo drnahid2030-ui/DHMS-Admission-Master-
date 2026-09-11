@@ -533,15 +533,41 @@
       var html = "";
       snap.forEach(function(doc){
         var d = doc.data();
-        html += '<div class="form-card" style="margin-bottom:16px;" data-test-id="'+doc.id+'">';
-        html += '<div style="display:flex;justify-content:space-between;align-items:center;">';
+        var testId = doc.id;
+        html += '<div class="form-card mt-item" style="margin-bottom:16px;cursor:pointer;transition:all 0.2s;" data-test-id="'+testId+'">';
+        html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:14px;">';
         html += '<div style="flex:1;"><div style="font-size:18px;font-weight:700;color:var(--teal);">'+escapeHtml(d.name)+'</div></div>';
-        html += '<button class="mtEditBtn submit-btn" data-id="'+doc.id+'" style="padding:8px 14px;font-size:12px;margin-right:8px;">✏️ সম্পাদনা</button>';
-        html += '<button class="mtDeleteBtn" data-id="'+doc.id+'" style="padding:8px 14px;font-size:12px;background:var(--rose);color:white;border:none;border-radius:6px;cursor:pointer;">🗑️ মুছুন</button>';
+        html += '<div style="font-size:20px;" class="toggle-icon">▼</div>';
+        html += '</div>';
+        html += '<div class="mt-expand-panel" style="display:none;padding:14px;border-top:1px solid var(--line);">';
+        html += '<div style="display:flex;gap:10px;margin-bottom:14px;">';
+        html += '<button class="mtEditBtn submit-btn" data-id="'+testId+'" style="flex:1;padding:8px 14px;font-size:12px;">✏️ সম্পাদনা</button>';
+        html += '<button class="mtDeleteBtn" data-id="'+testId+'" style="flex:1;padding:8px 14px;font-size:12px;background:var(--rose);color:white;border:none;border-radius:6px;cursor:pointer;">🗑️ মুছুন</button>';
+        html += '</div>';
         html += '</div>';
         html += '</div>';
       });
       holder.innerHTML = html;
+      
+      // Toggle panel on test item click
+      holder.querySelectorAll(".mt-item").forEach(function(card){
+        card.addEventListener("click", function(e){
+          // Don't toggle if clicking on buttons
+          if(e.target.closest("button")) return;
+          
+          var panel = card.querySelector(".mt-expand-panel");
+          var icon = card.querySelector(".toggle-icon");
+          var isExpanded = panel.style.display !== "none";
+          
+          if(isExpanded){
+            panel.style.display = "none";
+            icon.textContent = "▼";
+          } else {
+            panel.style.display = "block";
+            icon.textContent = "▲";
+          }
+        });
+      });
       
       holder.querySelectorAll(".mtEditBtn").forEach(function(btn){
         btn.addEventListener("click", function(e){
@@ -579,10 +605,9 @@
     var holder = byId("modelTestEditPanel");
     holder.style.display = "block";
     
-    // Top bar with back button and delete test
+    // Top bar with back button
     holder.innerHTML = '<div style="margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;">';
     holder.innerHTML += '<button class="btn-secondary" id="backToMtList">← ফিরে যান</button>';
-    holder.innerHTML += '<button class="submit-btn" id="deleteTestBtn" style="background:var(--rose);padding:8px 14px;font-size:12px;">🗑️ এই টেস্ট ডিলিট করুন</button>';
     holder.innerHTML += '</div>';
     
     holder.innerHTML += '<div style="background:var(--teal);color:white;padding:20px;border-radius:12px;text-align:center;margin-bottom:20px;"><div style="font-size:24px;font-weight:700;">'+escapeHtml(testName)+'</div></div>';
@@ -592,19 +617,6 @@
     holder.innerHTML += '<div id="mtQuestionsList" style="margin-top:20px;"></div>';
 
     byId("backToMtList").addEventListener("click", loadModelTestList);
-    byId("deleteTestBtn").addEventListener("click", function(){
-      if(!confirm("এই সম্পূর্ণ Model Test এবং সব প্রশ্ন ডিলিট করবেন? এটা আনডু করা যায় না।")) return;
-      db.collection("model_test_questions").where("model_test_id", "==", modelTestId).get().then(function(snap){
-        var batch = db.batch();
-        snap.forEach(function(doc){ batch['delete'](doc.ref); });
-        batch['commit']().then(function(){
-          return db.collection("model_tests").doc(modelTestId)['delete']();
-        }).then(function(){
-          alert("Model Test ডিলিট হয়েছে।");
-          loadModelTestList();
-        })['catch'](function(err){ alert("ব্যর্থ: "+err.message); });
-      });
-    });
     
     // Load category stats
     loadCategoryStats(modelTestId, testName);
