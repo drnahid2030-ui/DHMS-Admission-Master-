@@ -538,32 +538,82 @@
       return;
     }
     root.innerHTML = '<div class="screen" style="display:flex;align-items:center;justify-content:center;min-height:100vh;"><div style="text-align:center;"><div style="font-size:40px;margin-bottom:14px;">📋</div><div style="color:var(--ink-muted);font-size:14px;">মডেল টেস্ট লোড হচ্ছে...</div></div></div>';
-    db.collection("model_tests").orderBy("createdAt", "desc").get().then(function(snap){
+    
+    // Get all model tests ordered by creation
+    db.collection("model_tests").orderBy("createdAt", "asc").get().then(function(snap){
       if(snap.empty){
         renderHome();
         return;
       }
       var tests = [];
-      snap.forEach(function(doc){
-        tests.push({id: doc.id, name: doc.data().name, createdAt: doc.data().createdAt});
+      snap.forEach(function(doc, idx){
+        tests.push({id: doc.id, name: doc.data().name, createdAt: doc.data().createdAt, order: idx});
       });
-      renderModelTestList(tests);
+      
+      // Fetch current user's progress
+      var userName = localStorage.getItem("dhms_user_v1");
+      if(!userName){
+        renderHome();
+        return;
+      }
+      
+      db.collection("users").where("name", "==", userName).get().then(function(userSnap){
+        var completedTests = [];
+        if(!userSnap.empty){
+          var userData = userSnap.docs[0].data();
+          completedTests = userData.completedTests || [];
+        }
+        renderModelTestList(tests, completedTests);
+      })['catch'](function(err){
+        renderModelTestList(tests, []);
+      });
     })['catch'](function(err){
       renderHome();
     });
   }
 
-  function renderModelTestList(tests){
+  function renderModelTestList(tests, completedTests){
+    completedTests = completedTests || [];
     var html = '<div class="screen">';
     html += '<div style="padding:16px;background:var(--teal);color:white;text-align:center;font-size:18px;font-weight:600;">📋 মডেল টেস্ট নির্বাচন করুন</div>';
     html += '<div style="padding:16px;">';
-    tests.forEach(function(test){
-      html += '<div class="mode-card" style="cursor:pointer;margin-bottom:14px;" data-test-id="'+test.id+'">';
-      html += '<div style="font-size:28px;">🎯</div>';
+    
+    tests.forEach(function(test, idx){
+      // First test is always unlocked
+      // Other tests unlock only if previous test is passed (score >= 40)
+      var isUnlocked = false;
+      var isPassed = false;
+      var score = 0;
+      
+      if(idx === 0){
+        isUnlocked = true; // First test always open
+      } else {
+        var prevTest = tests[idx - 1];
+        var prevTestResult = completedTests.find(function(c){ return c.model_test_id === prevTest.id; });
+        if(prevTestResult && prevTestResult.isPassed){
+          isUnlocked = true;
+        }
+      }
+      
+      var testResult = completedTests.find(function(c){ return c.model_test_id === test.id; });
+      if(testResult){
+        isPassed = testResult.isPassed;
+        score = testResult.score;
+      }
+      
+      var lockIcon = isUnlocked ? "🎯" : "🔒";
+      var statusText = isUnlocked ? "সম্পূর্ণ পরীক্ষা দিন" : "আগের টেস্ট পাস করুন (40+ স্কোর)";
+      var opacity = isUnlocked ? "1" : "0.5";
+      var cursor = isUnlocked ? "pointer" : "not-allowed";
+      var passedText = isPassed ? " ✅ পাস (স্কোর: "+score+")" : "";
+      
+      html += '<div class="mode-card" style="cursor:'+cursor+';margin-bottom:14px;opacity:'+opacity+';" data-test-id="'+test.id+'" data-unlocked="'+isUnlocked+'">';
+      html += '<div style="font-size:28px;">'+lockIcon+'</div>';
       html += '<div class="title">'+escapeHtml(test.name)+'</div>';
-      html += '<div class="desc">সম্পূর্ণ পরীক্ষা দিন</div>';
+      html += '<div class="desc">'+statusText+passedText+'</div>';
       html += '</div>';
     });
+    
     html += '</div>';
     html += '<div style="padding:12px;text-align:center;"><button class="btn-secondary" id="backFromModelList" style="padding:10px 20px;">← ফিরে যান</button></div>';
     html += '</div>';
@@ -571,7 +621,11 @@
     
     root.querySelectorAll(".mode-card[data-test-id]").forEach(function(card){
       card.addEventListener("click", function(){
-        startModelTestById(card.getAttribute("data-test-id"));
+        if(card.getAttribute("data-unlocked") === "true"){
+          startModelTestById(card.getAttribute("data-test-id"));
+        } else {
+          alert("এই টেস্ট এখনো আনলক হয়নি। আগের টেস্ট ৪০+ স্কোরে পাস করুন।");
+        }
       });
     });
     byId("backFromModelList").addEventListener("click", renderHome);
@@ -931,7 +985,54 @@
     renderResult(pct, total);
   }
 
+  function saveModelTestScore(testLabel, score, total, isPassed){
+    var userName = localStorage.getItem("dhms_user_v1");
+    if(!userName || !db) return;
+    
+    // Extract test name from label (e.g. "Model Test 01 (90টি প্রশ্ন)" -> "Model Test 01")
+    var testName = testLabel.split(" (")[0];
+    
+    // Find user and update progress
+    db.collection("users").where("name", "==", userName).get().then(function(userSnap){
+      if(userSnap.empty) return;
+      
+      var userRef = userSnap.docs[0].ref;
+      var userData = userSnap.docs[0].data();
+      var completedTests = userData.completedTests || [];
+      
+      // Find if this test is already in completedTests
+      var testIndex = completedTests.findIndex(function(t){ return t.model_test_name === testName; });
+      
+      var testRecord = {
+        model_test_id: "test_" + testName.toLowerCase().replace(/ /g, "_"),
+        model_test_name: testName,
+        score: score,
+        total: total,
+        pct: Math.round(score * 100 / total),
+        isPassed: isPassed,
+        completedAt: new Date()
+      };
+      
+      if(testIndex >= 0){
+        completedTests[testIndex] = testRecord; // Update if already exists
+      } else {
+        completedTests.push(testRecord); // Add new
+      }
+      
+      userRef.update({completedTests: completedTests})['catch'](function(err){
+        console.log("Failed to save test score: " + err.message);
+      });
+    })['catch'](function(err){
+      console.log("Error finding user: " + err.message);
+    });
+  }
+
   function renderResult(pct, total){
+    // Save score if this is a model test
+    if(state.mode === "modeltest"){
+      saveModelTestScore(state.label, state.score, total, pct >= 40);
+    }
+    
     var attemptedItems = state.items.filter(function(it){ return it.picked !== null; });
     var wrongItems = attemptedItems.filter(function(it){ return it.picked !== it.q.answerIndex; });
     var skipped = state.items.length - attemptedItems.length;
