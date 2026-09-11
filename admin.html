@@ -226,6 +226,7 @@
   var editingQuestionModelTestId = null;
   var currentEditingModelTestId = null;
   var currentEditingTestName = null;
+  var currentViewingCategoryForEdit = null;
 
   function byId(id){ return document.getElementById(id); }
 
@@ -691,6 +692,9 @@
         }
       });
       
+      // Store current viewing category for use in edit
+      currentViewingCategoryForEdit = category;
+      
       // Sort by createdAt descending (client-side)
       docs.sort(function(a, b){
         var timeA = a.data().createdAt ? a.data().createdAt.toDate().getTime() : 0;
@@ -724,14 +728,36 @@
             html += '<div style="margin-bottom:10px;font-size:12px;background:#fffacd;padding:8px;border-radius:4px;"><strong>ব্যাখ্যা:</strong> '+escapeHtml(d.explanation)+'</div>';
           }
           html += '<div style="display:flex;gap:8px;">';
-          html += '<button class="submit-btn" style="flex:1;padding:8px 12px;font-size:11px;background:var(--teal);" onclick="editQuestion(\''+modelTestId+'\', \''+doc.id+'\')">✏️ এডিট করুন</button>';
-          html += '<button class="submit-btn" style="flex:1;padding:8px 12px;font-size:11px;background:var(--rose);" onclick="deleteQuestion(\''+modelTestId+'\', \''+doc.id+'\', \''+category+'\')">🗑️ ডিলিট করুন</button>';
+          html += '<button class="submit-btn edit-btn" data-mtid="'+modelTestId+'" data-qid="'+doc.id+'" style="flex:1;padding:8px 12px;font-size:11px;background:var(--teal);">✏️ এডিট করুন</button>';
+          html += '<button class="submit-btn delete-btn" data-mtid="'+modelTestId+'" data-qid="'+doc.id+'" data-cat="'+category+'" style="flex:1;padding:8px 12px;font-size:11px;background:var(--rose);">🗑️ ডিলিট করুন</button>';
           html += '</div>';
           html += '</div>';
         });
       }
       
       holder.innerHTML = html;
+      
+      // Attach event listeners for edit/delete buttons
+      holder.querySelectorAll(".edit-btn").forEach(function(btn){
+        btn.addEventListener("click", function(e){
+          e.preventDefault();
+          e.stopPropagation();
+          var mtid = btn.getAttribute("data-mtid");
+          var qid = btn.getAttribute("data-qid");
+          editQuestion(mtid, qid);
+        });
+      });
+      
+      holder.querySelectorAll(".delete-btn").forEach(function(btn){
+        btn.addEventListener("click", function(e){
+          e.preventDefault();
+          e.stopPropagation();
+          var mtid = btn.getAttribute("data-mtid");
+          var qid = btn.getAttribute("data-qid");
+          var cat = btn.getAttribute("data-cat");
+          deleteQuestion(mtid, qid, cat);
+        });
+      });
       
       // Attach back button click handler
       var backBtn = byId("backFromCat");
@@ -762,7 +788,7 @@
   function deleteQuestion(modelTestId, docId, category){
     if(!confirm("এই প্রশ্নটি ডিলিট করবেন?")) return;
     db.collection("model_test_questions").doc(docId)['delete']().then(function(){
-      loadCategoryStats(modelTestId);
+      loadCategoryStats(modelTestId, currentEditingTestName);
       showCategoryQuestions(modelTestId, category);
     })['catch'](function(err){ alert("ব্যর্থ: "+err.message); });
   }
@@ -801,7 +827,7 @@
       
       byId("mtCategoryView").innerHTML = form;
       byId("cancelEditBtn").addEventListener("click", function(){
-        showCategoryQuestions(modelTestId, d.category);
+        showCategoryQuestions(modelTestId, currentViewingCategoryForEdit);
       });
       byId("saveEditBtn").addEventListener("click", function(){
         var cat = byId("editCategory").value;
@@ -831,7 +857,7 @@
           byId("editMsg").textContent = "✅ সংরক্ষণ হয়েছে";
           byId("editMsg").className = "form-msg ok";
           setTimeout(function(){
-            loadCategoryStats(modelTestId);
+            loadCategoryStats(modelTestId, currentEditingTestName);
             showCategoryQuestions(modelTestId, cat);
           }, 800);
         })['catch'](function(err){
