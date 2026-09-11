@@ -680,7 +680,11 @@
         return timeB - timeA;
       });
       
-      var html = '<div style="margin-bottom:14px;"><button class="btn-secondary" id="backFromCat" onclick="backFromCategory(\''+modelTestId+'\', \''+category+'\')">← সব বিভাগ দেখুন</button></div>';
+      // Store current category view state
+      currentViewingModelTestId = modelTestId;
+      currentViewingCategory = category;
+      
+      var html = '<div style="margin-bottom:14px;"><button class="btn-secondary" id="backFromCat" onclick="backFromCategoryView()">← সব বিভাগ দেখুন</button></div>';
       html += '<div style="background:var(--amber);color:white;padding:16px;border-radius:12px;text-align:center;margin-bottom:20px;"><div style="font-size:18px;font-weight:700;">'+escapeHtml(category)+' ('+docs.length+'টি প্রশ্ন)</div></div>';
       
       if(docs.length === 0){
@@ -710,16 +714,31 @@
       }
       
       holder.innerHTML = html;
+      
+      // Attach back button click handler
+      var backBtn = byId("backFromCat");
+      if(backBtn){
+        backBtn.addEventListener("click", function(e){
+          e.preventDefault();
+          backFromCategoryView();
+        });
+      }
     })['catch'](function(err){
       holder.innerHTML = '<div class="empty">লোড ব্যর্থ: '+escapeHtml(err.message)+'</div>';
     });
   }
 
+  function backFromCategoryView(){
+    var holder = byId("mtCategoryView");
+    if(holder) holder.style.display = "none";
+    var stats = byId("mtCategoryStats");
+    if(stats) stats.style.display = "block";
+    var form = byId("mtAddQuestionForm");
+    if(form) form.style.display = "block";
+  }
+  
   function backFromCategory(modelTestId, category){
-    byId("mtCategoryView").style.display = "none";
-    byId("mtCategoryStats").style.display = "block";
-    byId("mtAddQuestionForm").style.display = "block";
-    byId("mtQuestionsList").style.display = "block";
+    backFromCategoryView();
   }
 
   function deleteQuestion(modelTestId, docId, category){
