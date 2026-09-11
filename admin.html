@@ -626,7 +626,7 @@
         var quota = CATEGORY_QUOTAS[cat];
         var pct = Math.round(count*100/quota);
         var color = count === quota ? "var(--teal)" : "var(--amber)";
-        html += '<div style="margin-bottom:10px;padding:12px;border-radius:8px;background:#f9f9f9;border:1px solid #ddd;cursor:pointer;transition:all 0.2s;position:relative;" class="cat-stat" data-mtid="'+modelTestId+'" data-cat="'+escapeHtml(cat)+'">';
+        html += '<div style="margin-bottom:10px;padding:12px;border-radius:8px;background:#f9f9f9;border:1px solid #ddd;cursor:pointer;transition:all 0.2s;" class="cat-stat" data-mtid="'+escapeHtml(modelTestId)+'" data-cat="'+escapeHtml(cat)+'" onclick="handleCategoryClick(\''+modelTestId+'\',\''+cat+'\')">';
         html += '<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;"><span style="font-weight:600;">'+escapeHtml(cat)+'</span><span style="font-weight:600;color:'+color+';">'+count+'/'+quota+'</span></div>';
         html += '<div style="height:6px;background:#eee;border-radius:3px;overflow:hidden;"><div style="height:100%;width:'+pct+'%;background:'+color+';"></div></div>';
         html += '</div>';
@@ -646,66 +646,74 @@
     });
   }
 
+  function handleCategoryClick(modelTestId, category){
+    showCategoryQuestions(modelTestId, category);
+  }
+
+
   function showCategoryQuestions(modelTestId, category){
+    var holder = byId("mtCategoryView");
+    if(!holder){
+      alert("Error: mtCategoryView element not found");
+      return;
+    }
+    
+    holder.innerHTML = '<div style="text-align:center;padding:20px;"><div style="font-size:18px;">⏳</div>প্রশ্ন লোড হচ্ছে...</div>';
+    holder.style.display = "block";
+    byId("mtCategoryStats").style.display = "none";
+    byId("mtAddQuestionForm").style.display = "none";
+    byId("mtQuestionsList").style.display = "none";
+    
     db.collection("model_test_questions").where("model_test_id", "==", modelTestId).where("category", "==", category).orderBy("createdAt", "desc").get().then(function(snap){
-      var holder = byId("mtCategoryView");
-      holder.style.display = "block";
-      byId("mtQuestionsList").style.display = "none";
-      byId("mtAddQuestionForm").style.display = "none";
-      
-      var html = '<div style="margin-bottom:14px;"><button class="btn-secondary" id="backFromCat">← সব বিভাগ দেখুন</button></div>';
+      var html = '<div style="margin-bottom:14px;"><button class="btn-secondary" id="backFromCat" onclick="backFromCategory(\''+modelTestId+'\', \''+category+'\')">← সব বিভাগ দেখুন</button></div>';
       html += '<div style="background:var(--amber);color:white;padding:16px;border-radius:12px;text-align:center;margin-bottom:20px;"><div style="font-size:18px;font-weight:700;">'+escapeHtml(category)+' ('+snap.size+'টি প্রশ্ন)</div></div>';
       
       if(snap.empty){
         html += '<div class="empty">এই বিভাগে কোনো প্রশ্ন নেই।</div>';
       } else {
-        snap.forEach(function(doc){
+        snap.forEach(function(doc, idx){
           var d = doc.data();
           html += '<div class="qlist-item" style="margin-bottom:12px;background:white;padding:14px;border-radius:8px;border:1px solid #eee;">';
-          html += '<div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:8px;">';
-          html += '<button class="qedit" data-id="'+doc.id+'" style="padding:6px 10px;font-size:11px;background:var(--teal);color:white;border:none;border-radius:4px;cursor:pointer;">✏️ এডিট</button>';
-          html += '<button class="qdel" data-id="'+doc.id+'" style="padding:6px 10px;font-size:11px;background:var(--rose);color:white;border:none;border-radius:4px;cursor:pointer;">🗑️ ডিলিট</button>';
+          html += '<div style="margin-bottom:8px;font-weight:600;font-size:12px;color:var(--ink-muted);">প্রশ্ন '+(idx+1)+'</div>';
+          html += '<div class="qtxt" style="margin-bottom:10px;font-size:14px;">'+escapeHtml(d.q)+'</div>';
+          html += '<div style="margin-bottom:10px;font-size:12px;color:#666;background:#f5f5f5;padding:8px;border-radius:4px;">';
+          html += '<strong>ক)</strong> '+escapeHtml(d.options[0])+'<br>';
+          html += '<strong>খ)</strong> '+escapeHtml(d.options[1])+'<br>';
+          html += '<strong>গ)</strong> '+escapeHtml(d.options[2])+'<br>';
+          html += '<strong>ঘ)</strong> '+escapeHtml(d.options[3])+'<br>';
           html += '</div>';
-          html += '<div class="qtxt" style="margin-bottom:8px;font-size:14px;">'+escapeHtml(d.q)+'</div>';
-          html += '<div style="margin-bottom:8px;font-size:12px;color:#666;">';
-          html += '<strong>অপশনঃ</strong> ক) '+escapeHtml(d.options[0])+' খ) '+escapeHtml(d.options[1])+' গ) '+escapeHtml(d.options[2])+' ঘ) '+escapeHtml(d.options[3])+'<br>';
-          html += '<strong>উত্তরঃ</strong> '+escapeHtml(d.answer);
-          if(d.explanation) html += '<br><strong>ব্যাখ্যাঃ</strong> '+escapeHtml(d.explanation.substring(0,80))+('...');
+          html += '<div style="margin-bottom:10px;font-size:12px;"><strong>সঠিক উত্তর:</strong> '+escapeHtml(d.answer)+'</div>';
+          if(d.explanation){
+            html += '<div style="margin-bottom:10px;font-size:12px;background:#fffacd;padding:8px;border-radius:4px;"><strong>ব্যাখ্যা:</strong> '+escapeHtml(d.explanation)+'</div>';
+          }
+          html += '<div style="display:flex;gap:8px;">';
+          html += '<button class="submit-btn" style="flex:1;padding:8px 12px;font-size:11px;background:var(--teal);" onclick="editQuestion(\''+modelTestId+'\', \''+doc.id+'\', \''+category+'\')">✏️ এডিট করুন</button>';
+          html += '<button class="submit-btn" style="flex:1;padding:8px 12px;font-size:11px;background:var(--rose);" onclick="deleteQuestion(\''+modelTestId+'\', \''+doc.id+'\', \''+category+'\')">🗑️ ডিলিট করুন</button>';
           html += '</div>';
           html += '</div>';
         });
       }
       
       holder.innerHTML = html;
-      byId("backFromCat").addEventListener("click", function(){
-        holder.style.display = "none";
-        byId("mtQuestionsList").style.display = "block";
-        byId("mtAddQuestionForm").style.display = "block";
-      });
-      
-      holder.querySelectorAll(".qedit").forEach(function(btn){
-        btn.addEventListener("click", function(e){
-          e.stopPropagation();
-          editQuestion(modelTestId, btn.getAttribute("data-id"));
-        });
-      });
-      
-      holder.querySelectorAll(".qdel").forEach(function(btn){
-        btn.addEventListener("click", function(e){
-          e.stopPropagation();
-          if(!confirm("এই প্রশ্নটি ডিলিট করবেন?")) return;
-          db.collection("model_test_questions").doc(btn.getAttribute("data-id"))['delete']().then(function(){
-            loadCategoryStats(modelTestId);
-            showCategoryQuestions(modelTestId, category);
-          })['catch'](function(err){ alert("ব্যর্থ: "+err.message); });
-        });
-      });
+    })['catch'](function(err){
+      holder.innerHTML = '<div class="empty">লোড ব্যর্থ: '+escapeHtml(err.message)+'</div>';
     });
   }
 
-  var editingQuestionId = null;
-  var editingQuestionModelTestId = null;
-  
+  function backFromCategory(modelTestId, category){
+    byId("mtCategoryView").style.display = "none";
+    byId("mtCategoryStats").style.display = "block";
+    byId("mtAddQuestionForm").style.display = "block";
+    byId("mtQuestionsList").style.display = "block";
+  }
+
+  function deleteQuestion(modelTestId, docId, category){
+    if(!confirm("এই প্রশ্নটি ডিলিট করবেন?")) return;
+    db.collection("model_test_questions").doc(docId)['delete']().then(function(){
+      loadCategoryStats(modelTestId);
+      showCategoryQuestions(modelTestId, category);
+    })['catch'](function(err){ alert("ব্যর্থ: "+err.message); });
+  }
   function editQuestion(modelTestId, questionId){
     db.collection("model_test_questions").doc(questionId).get().then(function(doc){
       var d = doc.data();
