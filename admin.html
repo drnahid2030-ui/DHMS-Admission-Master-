@@ -220,6 +220,12 @@
   var db = firebase.firestore();
   var allUsers = [];
   var searchTerm = "";
+  var currentViewingModelTestId = null;
+  var currentViewingCategory = null;
+  var editingQuestionId = null;
+  var editingQuestionModelTestId = null;
+  var currentEditingModelTestId = null;
+  var currentEditingTestName = null;
 
   function byId(id){ return document.getElementById(id); }
 
@@ -684,7 +690,7 @@
       currentViewingModelTestId = modelTestId;
       currentViewingCategory = category;
       
-      var html = '<div style="margin-bottom:14px;"><button class="btn-secondary" id="backFromCat" onclick="backFromCategoryView()">← সব বিভাগ দেখুন</button></div>';
+      var html = '<div style="margin-bottom:14px;"><button class="btn-secondary" id="backFromCat">← সব বিভাগ দেখুন</button></div>';
       html += '<div style="background:var(--amber);color:white;padding:16px;border-radius:12px;text-align:center;margin-bottom:20px;"><div style="font-size:18px;font-weight:700;">'+escapeHtml(category)+' ('+docs.length+'টি প্রশ্ন)</div></div>';
       
       if(docs.length === 0){
