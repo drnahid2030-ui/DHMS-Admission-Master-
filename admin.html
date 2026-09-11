@@ -601,9 +601,9 @@
     });
     
     // Load category stats
-    loadCategoryStats(modelTestId);
+    loadCategoryStats(modelTestId, testName);
     // Render add question form
-    renderAddQuestionForm(modelTestId);
+    renderAddQuestionForm(modelTestId, testName);
     // Load questions by category
     loadQuestionsByCategory(modelTestId);
   }
@@ -867,7 +867,7 @@
     });
   }
 
-  function renderAddQuestionForm(modelTestId){
+  function renderAddQuestionForm(modelTestId, testName){
     var form = '<div class="form-row"><div class="form-label">বিভাগ</div><select class="form-select" id="mtCategory">';
     Object.keys(CATEGORY_QUOTAS).forEach(function(cat){
       form += '<option value="'+escapeHtml(cat)+'">'+escapeHtml(cat)+'</option>';
@@ -912,7 +912,7 @@
       btn.disabled = true;
       db.collection("model_test_questions").add({
         model_test_id: modelTestId,
-        model_test_name: currentEditingTestName,
+        model_test_name: testName,
         category: cat,
         q: qText,
         options: [optA, optB, optC, optD],
@@ -929,8 +929,8 @@
         byId("mtNewOptD").value = "";
         byId("mtNewExplain").value = "";
         btn.disabled = false;
-        loadCategoryStats(modelTestId);
-        loadModelTestQuestions(modelTestId);
+        loadCategoryStats(modelTestId, testName);
+        loadQuestionsByCategory(modelTestId);
       })['catch'](function(err){
         byId("mtAddMsg").textContent = "ব্যর্থ: " + err.message;
         byId("mtAddMsg").className = "form-msg err";
