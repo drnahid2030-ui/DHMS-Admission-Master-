@@ -664,14 +664,29 @@
     byId("mtAddQuestionForm").style.display = "none";
     byId("mtQuestionsList").style.display = "none";
     
-    db.collection("model_test_questions").where("model_test_id", "==", modelTestId).where("category", "==", category).orderBy("createdAt", "desc").get().then(function(snap){
-      var html = '<div style="margin-bottom:14px;"><button class="btn-secondary" id="backFromCat" onclick="backFromCategory(\''+modelTestId+'\', \''+category+'\')">← সব বিভাগ দেখুন</button></div>';
-      html += '<div style="background:var(--amber);color:white;padding:16px;border-radius:12px;text-align:center;margin-bottom:20px;"><div style="font-size:18px;font-weight:700;">'+escapeHtml(category)+' ('+snap.size+'টি প্রশ্ন)</div></div>';
+    db.collection("model_test_questions").where("model_test_id", "==", modelTestId).get().then(function(snap){
+      // Filter by category client-side (avoids composite index requirement)
+      var docs = [];
+      snap.forEach(function(doc){
+        if(doc.data().category === category){
+          docs.push(doc);
+        }
+      });
       
-      if(snap.empty){
+      // Sort by createdAt descending (client-side)
+      docs.sort(function(a, b){
+        var timeA = a.data().createdAt ? a.data().createdAt.toDate().getTime() : 0;
+        var timeB = b.data().createdAt ? b.data().createdAt.toDate().getTime() : 0;
+        return timeB - timeA;
+      });
+      
+      var html = '<div style="margin-bottom:14px;"><button class="btn-secondary" id="backFromCat" onclick="backFromCategory(\''+modelTestId+'\', \''+category+'\')">← সব বিভাগ দেখুন</button></div>';
+      html += '<div style="background:var(--amber);color:white;padding:16px;border-radius:12px;text-align:center;margin-bottom:20px;"><div style="font-size:18px;font-weight:700;">'+escapeHtml(category)+' ('+docs.length+'টি প্রশ্ন)</div></div>';
+      
+      if(docs.length === 0){
         html += '<div class="empty">এই বিভাগে কোনো প্রশ্ন নেই।</div>';
       } else {
-        snap.forEach(function(doc, idx){
+        docs.forEach(function(doc, idx){
           var d = doc.data();
           html += '<div class="qlist-item" style="margin-bottom:12px;background:white;padding:14px;border-radius:8px;border:1px solid #eee;">';
           html += '<div style="margin-bottom:8px;font-weight:600;font-size:12px;color:var(--ink-muted);">প্রশ্ন '+(idx+1)+'</div>';
@@ -687,7 +702,7 @@
             html += '<div style="margin-bottom:10px;font-size:12px;background:#fffacd;padding:8px;border-radius:4px;"><strong>ব্যাখ্যা:</strong> '+escapeHtml(d.explanation)+'</div>';
           }
           html += '<div style="display:flex;gap:8px;">';
-          html += '<button class="submit-btn" style="flex:1;padding:8px 12px;font-size:11px;background:var(--teal);" onclick="editQuestion(\''+modelTestId+'\', \''+doc.id+'\', \''+category+'\')">✏️ এডিট করুন</button>';
+          html += '<button class="submit-btn" style="flex:1;padding:8px 12px;font-size:11px;background:var(--teal);" onclick="editQuestion(\''+modelTestId+'\', \''+doc.id+'\')">✏️ এডিট করুন</button>';
           html += '<button class="submit-btn" style="flex:1;padding:8px 12px;font-size:11px;background:var(--rose);" onclick="deleteQuestion(\''+modelTestId+'\', \''+doc.id+'\', \''+category+'\')">🗑️ ডিলিট করুন</button>';
           html += '</div>';
           html += '</div>';
