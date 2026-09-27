@@ -393,7 +393,7 @@
     });
 
     var html = '<table><thead><tr>';
-    html += '<th>নাম</th><th>এখন</th><th>মোবাইল</th><th>স্ট্যাটাস</th><th>মোট সময়</th><th>সেশন</th><th>প্রশ্ন চেষ্টা</th><th>সঠিক হার</th><th>প্রথম এসেছিল</th><th>শেষ সক্রিয়</th><th>অ্যাকশন</th>';
+    html += '<th>নাম</th><th>এখন</th><th>মোবাইল</th><th>বই কিনেছে</th><th>স্ট্যাটাস</th><th>মোট সময়</th><th>সেশন</th><th>প্রশ্ন চেষ্টা</th><th>সঠিক হার</th><th>প্রথম এসেছিল</th><th>শেষ সক্রিয়</th><th>অ্যাকশন</th>';
     html += '</tr></thead><tbody>';
     users.forEach(function(u){
       var acc = u.totalAttempted ? Math.round(100*(u.totalCorrect||0)/u.totalAttempted) : null;
@@ -401,9 +401,13 @@
       var blocked = u.blocked === true;
       var online = isOnline(u.lastSeen);
       html += '<tr class="'+(blocked?'blocked-row':'')+'">';
-      html += '<td>'+escapeHtml(u.name)+'</td>';
+      var bookStatus = u.hasBookPurchase ? '✅ কিনেছে' : '❌ কেনা নেই';
+      var bookColor = u.hasBookPurchase ? 'var(--teal)' : '#999';
+      
+      html += '<td>'+(u.hasBookPurchase?'⭐ ':'') + escapeHtml(u.name)+'</td>';
       html += '<td class="online-cell"><span class="dot '+(online?'dot-online':'dot-offline')+'"></span><span class="online-txt'+(online?' is-on':'')+'">'+(online?'অ্যাপে আছে':'অফলাইন')+'</span></td>';
       html += '<td>'+escapeHtml(u.mobile)+'</td>';
+      html += '<td><button class="book-purchase-toggle" data-id="'+escapeHtml(u._id)+'" data-status="'+(u.hasBookPurchase?1:0)+'" style="padding:6px 12px;border-radius:6px;border:1px solid #ccc;background:'+bookColor+';color:white;cursor:pointer;font-size:12px;font-weight:600;">'+bookStatus+'</button></td>';
       html += '<td><span class="status-pill '+(blocked?'status-blocked':'status-active')+'">'+(blocked?'ব্লক করা':'সক্রিয়')+'</span></td>';
       html += '<td>'+fmtDuration(u.totalSeconds)+'</td>';
       html += '<td>'+(u.sessions||0)+'</td>';
@@ -424,6 +428,25 @@
     html += '</tbody></table>';
     byId("tableHolder").innerHTML = html;
 
+    // Book purchase toggle
+    byId("tableHolder").querySelectorAll(".book-purchase-toggle").forEach(function(btn){
+      btn.addEventListener("click", function(e){
+        e.stopPropagation();
+        var userId = btn.getAttribute("data-id");
+        var currentStatus = parseInt(btn.getAttribute("data-status")) === 1;
+        var newStatus = !currentStatus;
+        
+        console.log("Toggling book purchase for user:", userId, "to", newStatus);
+        
+        db.collection("users").doc(userId).set({hasBookPurchase: newStatus}, {merge: true}).then(function(){
+          console.log("✅ Book purchase status updated");
+          load(); // Refresh the table
+        })['catch'](function(err){
+          alert("ব্যর্থ: " + err.message);
+        });
+      });
+    });
+    
     byId("tableHolder").querySelectorAll(".act-block, .act-unblock").forEach(function(btn){
       btn.addEventListener("click", function(){
         var id = btn.getAttribute("data-id");

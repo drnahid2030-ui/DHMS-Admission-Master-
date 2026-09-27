@@ -537,6 +537,8 @@
       renderHome();
       return;
     }
+    
+    console.log("startModelTest called - fetching fresh data");
     root.innerHTML = '<div class="screen" style="display:flex;align-items:center;justify-content:center;min-height:100vh;"><div style="text-align:center;"><div style="font-size:40px;margin-bottom:14px;">📋</div><div style="color:var(--ink-muted);font-size:14px;">মডেল টেস্ট লোড হচ্ছে...</div></div></div>';
     
     // Get all model tests ordered by creation
@@ -595,9 +597,13 @@
         isUnlocked = true; // First test always open
       } else {
         var prevTest = tests[idx - 1];
-        var prevTestResult = completedTests.find(function(c){ return c.model_test_id === prevTest.id; });
+        var prevTestResult = completedTests.find(function(c){ 
+          return c.model_test_name === prevTest.name; // Use name matching instead of ID
+        });
+        console.log("Test:", test.name, "Previous:", prevTest.name, "PrevResult:", prevTestResult);
         if(prevTestResult && prevTestResult.isPassed){
           isUnlocked = true;
+          console.log("✅ Test unlocked!");
         }
       }
       
@@ -1014,13 +1020,15 @@
       
       var testRecord = {
         model_test_id: testId || ("test_" + testName.toLowerCase().replace(/ /g, "_")),
-        model_test_name: testName,
+        model_test_name: testName,  // Use exact test name for matching
         score: score,
         total: total,
         pct: Math.round(score * 100 / total),
         isPassed: isPassed,
         completedAt: new Date().toISOString()
       };
+      
+      console.log("Saving test record:", testRecord);
       
       console.log("Test record to save:", testRecord);
       
