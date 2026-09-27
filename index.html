@@ -1042,14 +1042,28 @@
 
   function renderResult(pct, total){
     // Save score if this is a model test
+    var isPassed = pct >= 40;
     if(state.mode === "modeltest"){
-      saveModelTestScore(state.label, state.score, total, pct >= 40, state.currentTestId);
+      saveModelTestScore(state.label, state.score, total, isPassed, state.currentTestId);
     }
     
     var attemptedItems = state.items.filter(function(it){ return it.picked !== null; });
     var wrongItems = attemptedItems.filter(function(it){ return it.picked !== it.q.answerIndex; });
     var skipped = state.items.length - attemptedItems.length;
-    var emoji = pct>=80 ? "🎉" : (pct>=50 ? "👍" : "💪");
+    
+    // Model test specific emoji and message
+    var emoji, passMsg = "";
+    if(state.mode === "modeltest"){
+      if(isPassed){
+        emoji = "🎉";
+        passMsg = '<div style="background:linear-gradient(135deg,#10b981,#059669);color:white;padding:16px;border-radius:12px;margin-bottom:16px;text-align:center;font-size:18px;font-weight:700;">🎊 অভিনন্দন! আপনি এই পরীক্ষা পাস করেছেন!</div>';
+      } else {
+        emoji = "💪";
+        passMsg = '<div style="background:linear-gradient(135deg,#f97316,#ea580c);color:white;padding:16px;border-radius:12px;margin-bottom:16px;text-align:center;font-size:14px;">আরও ৪০ স্কোর পেলে পাস হবে। আবার চেষ্টা করুন!</div>';
+      }
+    } else {
+      emoji = pct>=80 ? "🎉" : (pct>=50 ? "👍" : "💪");
+    }
 
     var html = "";
     html += '<div class="screen">';
@@ -1060,10 +1074,17 @@
     html += '<div class="cap">সঠিক উত্তর '+pct+'%'+(skipped>0?' · এড়িয়ে গেছেন '+skipped+'টি':'')+'</div>';
     html += '</div>';
     html += '<div class="content">';
+    
+    // Add congratulation/encouragement message for model test
+    if(state.mode === "modeltest"){
+      html += passMsg;
+    }
 
     html += '<div class="btn-col">';
     if(state.mode === "timed"){
       html += '<button class="btn" id="retrySame">আবার টাইম গেম খেলুন</button>';
+    } else if(state.mode === "modeltest"){
+      html += '<button class="btn" id="retrySame">আবার এই পরীক্ষা দিন</button>';
     } else {
       html += '<button class="btn" id="retrySame">আবার একই বিষয় অনুশীলন করুন</button>';
     }
@@ -1095,11 +1116,24 @@
     byId("retrySame").addEventListener("click", function(){
       if(lastMode === "timed"){
         startSession(lastSubject, lastLabel, {timed:true, perQSec:lastPerQSec, limit:lastLimit});
+      } else if(lastMode === "modeltest"){
+        // Start the same model test again
+        var testId = state.currentTestId;
+        startModelTestById(testId);
       } else {
         startSession(lastSubject, lastLabel);
       }
     });
-    byId("goHomeBtn").addEventListener("click", goHome);
+    byId("goHomeBtn").addEventListener("click", function(){
+      // If this was a model test, refresh model test list to show newly unlocked tests
+      if(state.mode === "modeltest"){
+        setTimeout(function(){
+          startModelTest();
+        }, 500);
+      } else {
+        goHome();
+      }
+    });
   }
 
   // ---------------- Progress screen ----------------

@@ -266,11 +266,21 @@
     statHtml += '<div class="stat-box"><div class="num">'+totalUsers+'</div><div class="lbl">মোট ব্যবহারকারী</div></div>';
     statHtml += '<div class="stat-box"><div class="num">'+fmtDuration(totalSeconds)+'</div><div class="lbl">সম্মিলিত ব্যবহারের সময়</div></div>';
     statHtml += '<div class="stat-box"><div class="num">'+totalAttempts+'</div><div class="lbl">মোট প্রশ্নের চেষ্টা</div></div>';
-    statHtml += '<div class="stat-box" id="blockedStatBox" style="cursor:pointer;" onclick="showBlockedUsers()">';
+    statHtml += '<div class="stat-box" id="blockedStatBox" style="cursor:pointer;background:linear-gradient(135deg,var(--rose),#c026d3);color:white;">';
     statHtml += '<div class="num">'+blockedCount+'</div>';
     statHtml += '<div class="lbl">ব্লক করা (ক্লিক করুন)</div>';
     statHtml += '</div>';
     byId("statRow").innerHTML = statHtml;
+    
+    // Attach click handler for blocked stat box
+    var blockedBox = byId("blockedStatBox");
+    if(blockedBox){
+      blockedBox.addEventListener("click", function(e){
+        e.preventDefault();
+        e.stopPropagation();
+        showBlockedUsers();
+      });
+    }
   }
 
   function showBlockedUsers(){
