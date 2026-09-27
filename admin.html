@@ -119,6 +119,9 @@
   </div>
   <div id="filterContainer" style="padding:12px 16px;border-bottom:2px solid #eee;display:flex;gap:8px;flex-wrap:wrap;"></div>
   <div class="table-wrap">
+    <div id="statusMessage" style="padding:20px;text-align:center;color:#666;font-size:14px;">
+      ⏳ Firebase থেকে ডেটা লোড হচ্ছে...
+    </div>
     <div id="tableHolder"><div class="loading">লোড হচ্ছে...</div></div>
   </div>
   <p class="muted">এই লিংকটি নিরাপদে রাখুন — এটি প্রকাশ্যে শেয়ার করবেন না, কারণ এতে ব্যবহারকারীদের নাম ও মোবাইল নম্বর দেখা যায়। "ব্লক" করা হলে ঐ মোবাইল নম্বর দিয়ে অ্যাপ আর খোলা যাবে না।</p>
@@ -414,10 +417,37 @@
     
     byId("filterContainer").innerHTML = html;
     
-    byId("filterContainer").querySelectorAll(".filter-btn").forEach(function(btn){
-      btn.addEventListener("click", function(){
+    // Attach click handlers to all filter buttons
+    var filterBtns = byId("filterContainer").querySelectorAll(".filter-btn");
+    console.log("🟡 Attaching listeners to", filterBtns.length, "filter buttons");
+    
+    filterBtns.forEach(function(btn){
+      btn.addEventListener("click", function(e){
+        e.preventDefault();
         usageFilter = btn.getAttribute("data-filter");
-        console.log("Filter changed to:", usageFilter);
+        console.log("✅ Filter changed to:", usageFilter);
+        
+        // Update button styles
+        filterBtns.forEach(function(b){ b.style.background = 'white'; b.style.color = '#333'; b.style.borderColor = '#ccc'; });
+        
+        if(usageFilter === 'all'){
+          btn.style.background = 'var(--teal)';
+          btn.style.color = 'white';
+          btn.style.borderColor = 'var(--teal)';
+        } else if(usageFilter === 'high'){
+          btn.style.background = '#10b981';
+          btn.style.color = 'white';
+          btn.style.borderColor = '#10b981';
+        } else if(usageFilter === 'medium'){
+          btn.style.background = '#f59e0b';
+          btn.style.color = 'white';
+          btn.style.borderColor = '#f59e0b';
+        } else if(usageFilter === 'low'){
+          btn.style.background = '#6b7280';
+          btn.style.color = 'white';
+          btn.style.borderColor = '#6b7280';
+        }
+        
         renderTable();
       });
     });
@@ -556,18 +586,42 @@
 
 
   function load(){
+    console.log("🟡 Load function started...");
+    byId("statusMessage").innerHTML = '🔄 Firebase সংযোগ করছে...';
     byId("tableHolder").innerHTML = '<div class="loading">লোড হচ্ছে...</div>';
+    
+    // Check if Firebase is initialized
+    if(!db){
+      console.error("❌ Firebase Firestore not initialized");
+      byId("tableHolder").innerHTML = '<div class="empty">❌ Firebase সংযোগ করা যাচ্ছে না।</div>';
+      return;
+    }
+    
+    console.log("✅ Firebase initialized");
+    
     try {
+      console.log("🟡 Querying users collection...");
       db.collection("users").get().then(function(snap){
         try {
+          console.log("🟡 Processing data... Document count:", snap.size);
           var users = [];
           snap.forEach(function(doc){
             var d = doc.data();
             d._id = doc.id;
             users.push(d);
+            console.log("  - Loaded user:", d.name || d._id);
           });
+          
+          if(users.length === 0){
+            console.warn("⚠️  No users found in Firestore collection");
+            byId("statusMessage").innerHTML = '⚠️  কোনো ব্যবহারকারী ডেটা পাওয়া যায়নি।';
+            byId("tableHolder").innerHTML = '<div class="empty">কোনো ব্যবহারকারী নেই।</div>';
+            return;
+          }
+          
           allUsers = users;
-          console.log("✅ Users loaded:", users.length);
+          console.log("✅ Users processed. Total:", users.length);
+          byId("statusMessage").innerHTML = '📊 '+users.length+' ব্যবহারকারী পাওয়া গেছে, পরিসংখ্যান দেখাচ্ছি...';
           
           // Call render functions with error handling
           try {
@@ -575,36 +629,83 @@
             console.log("✅ Stats rendered");
           } catch(e) {
             console.error("renderStats error:", e);
+            byId("statusMessage").innerHTML = '❌ Stats: '+e.message;
           }
           
           try {
             renderUsageFilters();
             console.log("✅ Filters rendered");
+            byId("statusMessage").innerHTML = '📊 ফিল্টার দেখাচ্ছি...';
           } catch(e) {
             console.error("renderUsageFilters error:", e);
+            byId("statusMessage").innerHTML = '❌ Filter: '+e.message;
           }
           
           try {
             renderTable();
             console.log("✅ Table rendered");
+            byId("statusMessage").innerHTML = '✅ সম্পন্ন!';
+            setTimeout(function(){ byId("statusMessage").style.display = 'none'; }, 2000);
           } catch(e) {
             console.error("renderTable error:", e);
-            byId("tableHolder").innerHTML = '<div class="empty">টেবিল রেন্ডার করতে ব্যর্থ: '+e.message+'</div>';
+            byId("tableHolder").innerHTML = '<div class="empty">❌ টেবিল রেন্ডার করতে ব্যর্থ: '+e.message+'</div>';
+            byId("statusMessage").innerHTML = '❌ '+e.message;
           }
         } catch(e) {
-          console.error("Data processing error:", e);
-          byId("tableHolder").innerHTML = '<div class="empty">ডেটা প্রক্রিয়া করতে ব্যর্থ।</div>';
+          console.error("❌ Data processing error:", e);
+          byId("tableHolder").innerHTML = '<div class="empty">❌ ডেটা প্রক্রিয়া করতে ব্যর্থ: '+e.message+'</div>';
         }
       })['catch'](function(err){
-        console.error("Firestore query error:", err);
-        byId("tableHolder").innerHTML = '<div class="empty">ডেটা লোড করা যায়নি।<br>'+escapeHtml(err.message)+'</div>';
+        console.error("❌ Firestore query error:", err.code, err.message);
+        var errorMsg = 'ডেটা লোড করা যায়নি।';
+        if(err.code === 'permission-denied'){
+          errorMsg = '❌ অনুমতি নেই (Firebase Rules চেক করুন)';
+        } else if(err.code === 'unavailable'){
+          errorMsg = '❌ Firebase অনলাইন নেই';
+        } else {
+          errorMsg = '❌ ' + err.message;
+        }
+        byId("tableHolder").innerHTML = '<div class="empty">'+errorMsg+'<br><small>Console (F12) দেখুন</small></div>';
       });
     } catch(e) {
-      console.error("Load function error:", e);
-      byId("tableHolder").innerHTML = '<div class="empty">প্রোগ্রাম ত্রুটি: '+e.message+'</div>';
+      console.error("❌ Load function error:", e);
+      byId("tableHolder").innerHTML = '<div class="empty">❌ প্রোগ্রাম ত্রুটি: '+e.message+'</div>';
     }
   }
 
+  // Test function - call this from console
+  window.testFirebaseConnection = function(){
+    console.log("🧪 Testing Firebase connection...");
+    console.log("Firebase app initialized:", firebase.app() ? "YES" : "NO");
+    console.log("Firestore instance:", db ? "YES" : "NO");
+    
+    db.collection("users").get().then(function(snap){
+      console.log("✅ Firestore rules OK");
+      console.log("✅ Connection OK. Documents found:", snap.size);
+      if(snap.size === 0){
+        console.warn("⚠️  No documents in users collection");
+      }
+      snap.docs.forEach(function(doc){
+        console.log("- User:", doc.id, doc.data());
+      });
+    })['catch'](function(err){
+      console.error("❌ Firestore error:", err.code);
+      console.error("   Message:", err.message);
+      if(err.code === 'permission-denied'){
+        console.error("   Issue: Firestore Security Rules blocking access");
+        console.error("   Check: Admin panel should allow read access to users collection");
+      }
+    });
+  };
+  
+  // Auto-check on page load
+  window.autoCheckFirebase = function(){
+    console.log("📋 Auto-checking Firebase...");
+    setTimeout(function(){
+      testFirebaseConnection();
+    }, 1000);
+  };
+  
   byId("refreshBtn").addEventListener("click", load);
   
   byId("searchInput").addEventListener("input", function(){
@@ -616,9 +717,8 @@
     });
   });
   
-  // Set initial active button
-  document.querySelector('[data-filter="all"]').style.background = "var(--teal)";
-  document.querySelector('[data-filter="all"]').style.color = "white";
+  // Set initial active button (after renderUsageFilters creates the buttons)
+  // This will be done inside renderUsageFilters() instead
   
   load();
 
@@ -1275,6 +1375,14 @@
   }
 
 })();
-</script>
+
+  // Auto-check Firebase after 2 seconds if no data loaded
+  setTimeout(function(){
+    if(allUsers.length === 0){
+      console.log("⏱️  No data after 2 seconds, checking Firebase...");
+      window.autoCheckFirebase();
+    }
+  }, 2000);
+  </script>
 </body>
 </html>
