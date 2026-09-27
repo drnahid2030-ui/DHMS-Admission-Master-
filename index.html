@@ -547,7 +547,13 @@
       }
       var tests = [];
       snap.forEach(function(doc, idx){
-        tests.push({id: doc.id, name: doc.data().name, createdAt: doc.data().createdAt, order: idx});
+        tests.push({
+          id: doc.id, 
+          name: doc.data().name, 
+          createdAt: doc.data().createdAt, 
+          order: idx,
+          firestoreId: doc.id  // Store actual Firestore ID for matching
+        });
       });
       
       // Fetch current user's progress
@@ -676,7 +682,8 @@
         score: 0,
         startedAt: Date.now(),
         perQSec: null,
-        qRemaining: null
+        qRemaining: null,
+        currentTestId: modelTestId  // Store the test ID for score saving
       };
       clearTimer();
       renderQuiz();
@@ -985,12 +992,14 @@
     renderResult(pct, total);
   }
 
-  function saveModelTestScore(testLabel, score, total, isPassed){
+  function saveModelTestScore(testLabel, score, total, isPassed, testId){
     var userName = localStorage.getItem("dhms_user_v1");
     if(!userName || !db) return;
     
     // Extract test name from label (e.g. "Model Test 01 (90টি প্রশ্ন)" -> "Model Test 01")
     var testName = testLabel.split(" (")[0];
+    
+    console.log("Saving score for test:", testName, "Score:", score, "Passed:", isPassed);
     
     // Find user and update progress
     db.collection("users").where("name", "==", userName).get().then(function(userSnap){
@@ -1000,18 +1009,20 @@
       var userData = userSnap.docs[0].data();
       var completedTests = userData.completedTests || [];
       
-      // Find if this test is already in completedTests
+      // Find if this test is already in completedTests (use testName for matching)
       var testIndex = completedTests.findIndex(function(t){ return t.model_test_name === testName; });
       
       var testRecord = {
-        model_test_id: "test_" + testName.toLowerCase().replace(/ /g, "_"),
+        model_test_id: testId || ("test_" + testName.toLowerCase().replace(/ /g, "_")),
         model_test_name: testName,
         score: score,
         total: total,
         pct: Math.round(score * 100 / total),
         isPassed: isPassed,
-        completedAt: new Date()
+        completedAt: new Date().toISOString()
       };
+      
+      console.log("Test record to save:", testRecord);
       
       if(testIndex >= 0){
         completedTests[testIndex] = testRecord; // Update if already exists
@@ -1019,7 +1030,9 @@
         completedTests.push(testRecord); // Add new
       }
       
-      userRef.update({completedTests: completedTests})['catch'](function(err){
+      userRef.update({completedTests: completedTests}).then(function(){
+        console.log("✅ Test score saved successfully");
+      })['catch'](function(err){
         console.log("Failed to save test score: " + err.message);
       });
     })['catch'](function(err){
@@ -1030,7 +1043,7 @@
   function renderResult(pct, total){
     // Save score if this is a model test
     if(state.mode === "modeltest"){
-      saveModelTestScore(state.label, state.score, total, pct >= 40);
+      saveModelTestScore(state.label, state.score, total, pct >= 40, state.currentTestId);
     }
     
     var attemptedItems = state.items.filter(function(it){ return it.picked !== null; });
