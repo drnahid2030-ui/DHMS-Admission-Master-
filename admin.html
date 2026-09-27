@@ -260,12 +260,20 @@
     var totalAttempts = users.reduce(function(a,u){return a+(u.totalAttempted||0);},0);
     var blockedCount = users.filter(function(u){return u.blocked===true;}).length;
     var onlineCount = users.filter(function(u){return isOnline(u.lastSeen);}).length;
+    
+    // Count by performance level
+    var highCount = users.filter(function(u){ var acc = u.totalAttempted ? Math.round(100*(u.totalCorrect||0)/u.totalAttempted) : 0; return acc >= 70; }).length;
+    var mediumCount = users.filter(function(u){ var acc = u.totalAttempted ? Math.round(100*(u.totalCorrect||0)/u.totalAttempted) : 0; return acc >= 45 && acc < 70; }).length;
+    var lowCount = users.filter(function(u){ var acc = u.totalAttempted ? Math.round(100*(u.totalCorrect||0)/u.totalAttempted) : 0; return acc < 45; }).length;
 
     var statHtml = "";
     statHtml += '<div class="stat-box"><div class="num" style="color:#16A34A;">'+onlineCount+'</div><div class="lbl">🟢 এখন অনলাইন</div></div>';
     statHtml += '<div class="stat-box"><div class="num">'+totalUsers+'</div><div class="lbl">মোট ব্যবহারকারী</div></div>';
     statHtml += '<div class="stat-box"><div class="num">'+fmtDuration(totalSeconds)+'</div><div class="lbl">সম্মিলিত ব্যবহারের সময়</div></div>';
     statHtml += '<div class="stat-box"><div class="num">'+totalAttempts+'</div><div class="lbl">মোট প্রশ্নের চেষ্টা</div></div>';
+    statHtml += '<div class="stat-box" style="background:linear-gradient(135deg,#10b981,#059669);color:white;"><div class="num">'+highCount+'</div><div class="lbl">🌟 বেশি (70%+)</div></div>';
+    statHtml += '<div class="stat-box" style="background:linear-gradient(135deg,#f59e0b,#d97706);color:white;"><div class="num">'+mediumCount+'</div><div class="lbl">⭐ মধ্যম (45-70%)</div></div>';
+    statHtml += '<div class="stat-box" style="background:linear-gradient(135deg,#ef4444,#dc2626);color:white;"><div class="num">'+lowCount+'</div><div class="lbl">📝 কম (<45%)</div></div>';
     statHtml += '<div class="stat-box" id="blockedStatBox" style="cursor:pointer;background:linear-gradient(135deg,var(--rose),#c026d3);color:white;">';
     statHtml += '<div class="num">'+blockedCount+'</div>';
     statHtml += '<div class="lbl">ব্লক করা (ক্লিক করুন)</div>';
@@ -374,12 +382,76 @@
     });
   }
 
+  function getUsageCategory(user){
+    var totalSeconds = user.totalSeconds || 0;
+    var sessions = user.sessions || 0;
+    
+    // High: >2 hours or >5 sessions
+    if(totalSeconds > 7200 || sessions > 5){
+      return 'high';
+    }
+    // Medium: 30min-2hrs or 2-5 sessions
+    if(totalSeconds >= 1800 || sessions >= 2){
+      return 'medium';
+    }
+    // Low: <30min or <2 sessions
+    return 'low';
+  }
+  
+  function renderUsageFilters(){
+    var high = allUsers.filter(function(u){ return getUsageCategory(u) === 'high'; }).length;
+    var medium = allUsers.filter(function(u){ return getUsageCategory(u) === 'medium'; }).length;
+    var low = allUsers.filter(function(u){ return getUsageCategory(u) === 'low'; }).length;
+    
+    var html = '<div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">';
+    html += '<button class="filter-btn '+(usageFilter==='all'?'active':'')+'" data-filter="all" style="padding:8px 16px;border:2px solid '+(usageFilter==='all'?'var(--teal)':'#ccc')+';background:'+(usageFilter==='all'?'var(--teal)':'white')+';color:'+(usageFilter==='all'?'white':'#333')+';border-radius:6px;cursor:pointer;font-weight:600;">সব ('+allUsers.length+')</button>';
+    html += '<button class="filter-btn '+(usageFilter==='high'?'active':'')+'" data-filter="high" style="padding:8px 16px;border:2px solid '+(usageFilter==='high'?'#10b981':'#ccc')+';background:'+(usageFilter==='high'?'#10b981':'white')+';color:'+(usageFilter==='high'?'white':'#333')+';border-radius:6px;cursor:pointer;font-weight:600;">🔥 বেশি ব্যবহার ('+high+')</button>';
+    html += '<button class="filter-btn '+(usageFilter==='medium'?'active':'')+'" data-filter="medium" style="padding:8px 16px;border:2px solid '+(usageFilter==='medium'?'#f59e0b':'#ccc')+';background:'+(usageFilter==='medium'?'#f59e0b':'white')+';color:'+(usageFilter==='medium'?'white':'#333')+';border-radius:6px;cursor:pointer;font-weight:600;">⚡ মধ্যম ('+medium+')</button>';
+    html += '<button class="filter-btn '+(usageFilter==='low'?'active':'')+'" data-filter="low" style="padding:8px 16px;border:2px solid '+(usageFilter==='low'?'#6b7280':'#ccc')+';background:'+(usageFilter==='low'?'#6b7280':'white')+';color:'+(usageFilter==='low'?'white':'#333')+';border-radius:6px;cursor:pointer;font-weight:600;">💤 কম ('+low+')</button>';
+    html += '</div>';
+    
+    byId("filterContainer").innerHTML = html;
+    
+    byId("filterContainer").querySelectorAll(".filter-btn").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        usageFilter = btn.getAttribute("data-filter");
+        console.log("Filter changed to:", usageFilter);
+        renderTable();
+      });
+    });
+  }
+
   function renderTable(){
     var users = allUsers.slice();
+    
+    // Apply performance filter
+    if(filterLevel && filterLevel !== "all"){
+      users = users.filter(function(u){
+        var acc = u.totalAttempted ? Math.round(100*(u.totalCorrect||0)/u.totalAttempted) : 0;
+        
+        if(filterLevel === "high"){
+          return acc >= 70; // 70% or more
+        } else if(filterLevel === "medium"){
+          return acc >= 45 && acc < 70; // 45-70%
+        } else if(filterLevel === "low"){
+          return acc < 45; // Less than 45%
+        }
+        return true;
+      });
+    }
+    
+    // Apply search filter
     if(searchTerm){
       var t = searchTerm.toLowerCase();
       users = users.filter(function(u){
         return (u.name||'').toLowerCase().indexOf(t)!==-1 || (u.mobile||'').indexOf(t)!==-1;
+      });
+    }
+    
+    // Apply usage filter
+    if(usageFilter !== 'all'){
+      users = users.filter(function(u){
+        return getUsageCategory(u) === usageFilter;
       });
     }
     if(users.length === 0){
@@ -409,10 +481,26 @@
       html += '<td>'+escapeHtml(u.mobile)+'</td>';
       html += '<td><button class="book-purchase-toggle" data-id="'+escapeHtml(u._id)+'" data-status="'+(u.hasBookPurchase?1:0)+'" style="padding:6px 12px;border-radius:6px;border:1px solid #ccc;background:'+bookColor+';color:white;cursor:pointer;font-size:12px;font-weight:600;">'+bookStatus+'</button></td>';
       html += '<td><span class="status-pill '+(blocked?'status-blocked':'status-active')+'">'+(blocked?'ব্লক করা':'সক্রিয়')+'</span></td>';
-      html += '<td>'+fmtDuration(u.totalSeconds)+'</td>';
+      var usageCategory = getUsageCategory(u);
+      var usageBadge = '';
+      if(usageCategory === 'high'){
+        usageBadge = '<span style="display:inline-block;background:#10b981;color:white;padding:4px 8px;border-radius:4px;font-size:11px;font-weight:600;">🔥 বেশি</span>';
+      } else if(usageCategory === 'medium'){
+        usageBadge = '<span style="display:inline-block;background:#f59e0b;color:white;padding:4px 8px;border-radius:4px;font-size:11px;font-weight:600;">⚡ মধ্যম</span>';
+      } else {
+        usageBadge = '<span style="display:inline-block;background:#6b7280;color:white;padding:4px 8px;border-radius:4px;font-size:11px;font-weight:600;">💤 কম</span>';
+      }
+      
+      html += '<td>'+fmtDuration(u.totalSeconds)+' '+usageBadge+'</td>';
       html += '<td>'+(u.sessions||0)+'</td>';
       html += '<td>'+(u.totalAttempted||0)+'</td>';
-      html += '<td class="'+accCls+'">'+(acc===null?'—':acc+'%')+'</td>';
+      var perfBadge = '';
+      if(acc !== null){
+        if(acc >= 70) perfBadge = '🌟 ';
+        else if(acc >= 45) perfBadge = '⭐ ';
+        else perfBadge = '📝 ';
+      }
+      html += '<td class="'+accCls+'">'+(acc===null?'—':perfBadge+acc+'%')+'</td>';
       html += '<td class="muted">'+fmtDate(u.firstSeen)+'</td>';
       html += '<td class="muted">'+fmtDate(u.lastSeen)+'</td>';
       html += '<td>';
@@ -492,6 +580,7 @@
       });
       allUsers = users;
       renderStats(users);
+      renderUsageFilters();
       renderTable();
       // Refresh table every time users are loaded
       console.log("Users loaded:", users.length);
@@ -501,10 +590,64 @@
   }
 
   byId("refreshBtn").addEventListener("click", load);
+  var filterLevel = "all"; // all, high, medium, low
+  
   byId("searchInput").addEventListener("input", function(){
     searchTerm = this.value.trim();
     renderTable();
   });
+  
+  // Create filter buttons
+  var filterContainer = document.createElement("div");
+  filterContainer.id = "filterContainer";
+  filterContainer.style.cssText = "margin-bottom:16px;display:flex;gap:8px;flex-wrap:wrap;";
+  
+  var filterHTML = '';
+  filterHTML += '<button class="filter-btn" data-filter="all" style="padding:8px 16px;border-radius:6px;border:2px solid var(--teal);background:var(--teal);color:white;cursor:pointer;font-weight:600;">সব ব্যবহারকারী</button>';
+  filterHTML += '<button class="filter-btn" data-filter="high" style="padding:8px 16px;border-radius:6px;border:2px solid #10b981;background:white;color:#10b981;cursor:pointer;font-weight:600;">🌟 বেশি (70%+)</button>';
+  filterHTML += '<button class="filter-btn" data-filter="medium" style="padding:8px 16px;border-radius:6px;border:2px solid #f59e0b;background:white;color:#f59e0b;cursor:pointer;font-weight:600;">⭐ মধ্যম (45-70%)</button>';
+  filterHTML += '<button class="filter-btn" data-filter="low" style="padding:8px 16px;border-radius:6px;border:2px solid #ef4444;background:white;color:#ef4444;cursor:pointer;font-weight:600;">📝 কম (<45%)</button>';
+  
+  filterContainer.innerHTML = filterHTML;
+  var searchRow = byId("searchInput").parentElement;
+  if(searchRow && searchRow.parentElement){
+    searchRow.parentElement.insertBefore(filterContainer, searchRow.nextSibling);
+  }
+  
+  document.querySelectorAll(".filter-btn").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      var newFilter = btn.getAttribute("data-filter");
+      filterLevel = newFilter;
+      
+      // Update button styles
+      document.querySelectorAll(".filter-btn").forEach(function(b){
+        var isActive = b.getAttribute("data-filter") === newFilter;
+        var colors = {
+          all: {bg: "var(--teal)", text: "white"},
+          high: {bg: "#10b981", text: "white"},
+          medium: {bg: "#f59e0b", text: "white"},
+          low: {bg: "#ef4444", text: "white"}
+        };
+        
+        if(isActive){
+          b.style.background = colors[newFilter].bg;
+          b.style.color = colors[newFilter].text;
+        } else {
+          b.style.background = "white";
+          b.style.color = (b.getAttribute("data-filter") === "high" ? "#10b981" : 
+                           (b.getAttribute("data-filter") === "medium" ? "#f59e0b" : 
+                            (b.getAttribute("data-filter") === "low" ? "#ef4444" : "var(--teal)")));
+        }
+      });
+      
+      renderTable();
+    });
+  });
+  
+  // Set initial active button
+  document.querySelector('[data-filter="all"]').style.background = "var(--teal)";
+  document.querySelector('[data-filter="all"]').style.color = "white";
+  
   load();
 
   // ---------------- Tabs ----------------
