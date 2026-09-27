@@ -1,0 +1,1165 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin · DHMS এডমিশন মাস্টার</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Bengali:wght@600;700&family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F4F6F8; --ink:#1E2530; --ink-muted:#6B7684;
+    --teal:#0F766E; --teal-deep:#0A5450; --teal-bg:#E3F4F2;
+    --amber:#D97706; --line:#E4E8EC; --rose:#BE123C; --rose-bg:#FBE7EC;
+    --correct:#15803D; --wrong:#DC2626;
+    --shadow:0 2px 10px rgba(20,30,40,.06);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Hind Siliguri',sans-serif;}
+  .head{background:linear-gradient(135deg,var(--teal) 0%,var(--teal-deep) 100%);color:#fff;padding:22px 20px;border-radius:0 0 18px 18px;}
+  .head h1{margin:0;font-family:'Noto Serif Bengali',serif;font-size:22px;}
+  .head .sub{font-size:13px;color:rgba(255,255,255,.82);margin-top:4px;}
+  .wrap{max-width:960px;margin:0 auto;padding:18px;}
+  .stat-row{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;}
+  .stat-box{flex:1;min-width:110px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px;text-align:center;box-shadow:var(--shadow);}
+  .stat-box .num{font-family:'Noto Serif Bengali',serif;font-size:22px;font-weight:700;color:var(--teal-deep);}
+  .stat-box .lbl{font-size:11.5px;color:var(--ink-muted);margin-top:2px;}
+  table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:var(--shadow);}
+  th,td{padding:10px 12px;text-align:left;font-size:13.5px;border-bottom:1px solid var(--line);}
+  th{background:var(--teal-deep);color:#fff;font-weight:600;font-size:12.5px;position:sticky;top:0;}
+  tr:last-child td{border-bottom:none;}
+  tr:hover td{background:#F7FBFA;}
+  tr.blocked-row td{background:var(--rose-bg);}
+  .muted{color:var(--ink-muted);font-size:12px;}
+  .toolbar{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap;}
+  .refresh-btn{
+    background:var(--teal);color:#fff;border:none;padding:9px 16px;border-radius:8px;
+    font-size:13.5px;cursor:pointer;
+  }
+  .search-input{
+    flex:1;min-width:160px;padding:9px 13px;border:1.5px solid var(--line);border-radius:8px;
+    font-family:'Hind Siliguri',sans-serif;font-size:13.5px;background:#fff;color:var(--ink);
+  }
+  .table-wrap{overflow-x:auto;}
+  .loading, .empty{text-align:center;color:var(--ink-muted);padding:30px;}
+  .accu-good{color:var(--correct);font-weight:600;}
+  .accu-mid{color:var(--amber);font-weight:600;}
+  .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px;vertical-align:middle;}
+  .dot-online{background:#16A34A;box-shadow:0 0 0 3px rgba(22,163,74,.16);}
+  .dot-offline{background:#B0B7C0;}
+  .online-cell{white-space:nowrap;}
+  .online-txt{font-size:12px;color:var(--ink-muted);}
+  .online-txt.is-on{color:var(--correct);font-weight:600;}
+  .accu-low{color:var(--wrong);font-weight:600;}
+  .status-pill{font-size:11px;font-weight:700;border-radius:20px;padding:3px 9px;white-space:nowrap;}
+  .status-active{background:var(--teal-bg);color:var(--teal-deep);}
+  .status-blocked{background:var(--rose-bg);color:var(--rose);}
+  .act-btn{
+    border:none;border-radius:7px;padding:6px 11px;font-size:12px;cursor:pointer;
+    margin-right:6px;white-space:nowrap;
+  }
+  .act-block{background:var(--rose-bg);color:var(--rose);}
+  .act-unblock{background:var(--teal-bg);color:var(--teal-deep);}
+  .act-delete{background:#F3F4F6;color:var(--ink-muted);}
+
+  .tabs{display:flex;gap:8px;margin-bottom:16px;}
+  .tab-btn{
+    flex:1;background:#fff;border:1.5px solid var(--line);border-radius:10px;
+    padding:11px;font-size:14px;font-weight:600;color:var(--ink-muted);cursor:pointer;
+  }
+  .tab-btn.active{background:var(--teal);border-color:var(--teal);color:#fff;}
+  .panel{display:none;}
+  .panel.active{display:block;}
+
+  .form-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px;box-shadow:var(--shadow);margin-bottom:20px;}
+  .form-row{margin-bottom:14px;}
+  .form-label{font-size:13px;color:var(--ink-muted);margin-bottom:6px;font-weight:600;}
+  .form-input, .form-select, .form-textarea{
+    width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:8px;
+    font-family:'Hind Siliguri',sans-serif;font-size:14px;background:#fff;color:var(--ink);
+  }
+  .form-textarea{resize:vertical;min-height:56px;}
+  .opt-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .opt-field{display:flex;align-items:center;gap:8px;}
+  .opt-field .opt-letter{
+    flex:0 0 28px;height:36px;border-radius:8px;background:var(--teal-bg);color:var(--teal-deep);
+    display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;
+  }
+  .radio-row{display:flex;gap:14px;flex-wrap:wrap;}
+  .radio-opt{display:flex;align-items:center;gap:6px;font-size:14px;cursor:pointer;}
+  .submit-btn{
+    background:var(--teal);color:#fff;border:none;padding:11px 20px;border-radius:8px;
+    font-size:14px;font-weight:600;cursor:pointer;width:100%;
+  }
+  .form-msg{font-size:13px;margin-top:10px;display:none;}
+  .form-msg.ok{color:var(--correct);display:block;}
+  .form-msg.err{color:var(--wrong);display:block;}
+  .qlist-item{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:8px;font-size:13.5px;}
+  .qlist-item .qtxt{font-weight:600;margin-bottom:4px;}
+  .qlist-item .qmeta{color:var(--ink-muted);font-size:12px;}
+  .qlist-item .qdel{float:right;background:#F3F4F6;color:var(--wrong);border:none;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer;}
+</style>
+</head>
+<body>
+<div class="head">
+  <h1>👥 অ্যাডমিন প্যানেল</h1>
+  <div class="sub">DHMS এডমিশন মাস্টার</div>
+</div>
+<div class="wrap">
+  <div class="tabs">
+    <button class="tab-btn active" id="tabUsers">👥 ব্যবহারকারী</button>
+    <button class="tab-btn" id="tabQuestions">➕ প্রশ্ন যোগ করুন</button>
+    <button class="tab-btn" id="tabModelTest">🎯 মডেল টেস্ট</button>
+  </div>
+
+  <div class="panel active" id="usersPanel">
+  <div class="stat-row" id="statRow"></div>
+  <div class="toolbar">
+    <button class="refresh-btn" id="refreshBtn">🔄 রিফ্রেশ করুন</button>
+    <input class="search-input" id="searchInput" type="text" placeholder="নাম বা মোবাইল দিয়ে খুঁজুন...">
+  </div>
+  <div class="table-wrap">
+    <div id="tableHolder"><div class="loading">লোড হচ্ছে...</div></div>
+  </div>
+  <p class="muted">এই লিংকটি নিরাপদে রাখুন — এটি প্রকাশ্যে শেয়ার করবেন না, কারণ এতে ব্যবহারকারীদের নাম ও মোবাইল নম্বর দেখা যায়। "ব্লক" করা হলে ঐ মোবাইল নম্বর দিয়ে অ্যাপ আর খোলা যাবে না।</p>
+  </div>
+
+  <div class="panel" id="questionsPanel">
+    <div class="form-card">
+      <div class="form-row">
+        <div class="form-label">বিষয়</div>
+        <select class="form-select" id="qSubject">
+          <option value="bangla">বাংলা</option>
+          <option value="english">English</option>
+          <option value="gonit">গণিত</option>
+          <option value="biggan">বিজ্ঞান</option>
+          <option value="gk">সাধারণ জ্ঞান</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-label">অধ্যায়/টপিক</div>
+        <input class="form-input" id="qTopic" type="text" placeholder="যেমনঃ Trigonometry, বিশেষ্য, রক্ত সংবহন">
+      </div>
+      <div class="form-row">
+        <div class="form-label">কঠিনতা স্তর</div>
+        <div class="radio-row">
+          <label class="radio-opt"><input type="radio" name="qDifficulty" value="সহজ" checked> সহজ</label>
+          <label class="radio-opt"><input type="radio" name="qDifficulty" value="মধ্যম"> মধ্যম</label>
+          <label class="radio-opt"><input type="radio" name="qDifficulty" value="কঠিন"> কঠিন</label>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-label">Tags (comma দিয়ে আলাদা করুন)</div>
+        <input class="form-input" id="qTags" type="text" placeholder="যেমনঃ গুরুত্বপূর্ণ, DHMS ২০২৩, নতুন">
+      </div>
+      <div class="form-row">
+        <div class="form-label">উৎস/রেফারেন্স</div>
+        <input class="form-input" id="qSource" type="text" placeholder="যেমনঃ বই পৃষ্ঠা ১৫, লেকচার নোট">
+      </div>
+      <div class="form-row">
+        <div class="form-label">Admin নোট (শুধুমাত্র admin দেখতে পারবে)</div>
+        <textarea class="form-textarea" id="qAdminNote" placeholder="যেমনঃ এই প্রশ্ন ২০২৪ DHMS-এ এসেছে..."></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-label">প্রশ্ন</div>
+        <textarea class="form-textarea" id="qText" placeholder="প্রশ্নটি এখানে লিখুন..."></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-label">অপশনসমূহ</div>
+        <div class="opt-grid">
+          <div class="opt-field"><span class="opt-letter">ক</span><input class="form-input" id="qOptA" placeholder="অপশন ক"></div>
+          <div class="opt-field"><span class="opt-letter">খ</span><input class="form-input" id="qOptB" placeholder="অপশন খ"></div>
+          <div class="opt-field"><span class="opt-letter">গ</span><input class="form-input" id="qOptC" placeholder="অপশন গ"></div>
+          <div class="opt-field"><span class="opt-letter">ঘ</span><input class="form-input" id="qOptD" placeholder="অপশন ঘ"></div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-label">সঠিক উত্তর</div>
+        <div class="radio-row" id="qAnswerRadios">
+          <label class="radio-opt"><input type="radio" name="qAnswer" value="A" checked> ক</label>
+          <label class="radio-opt"><input type="radio" name="qAnswer" value="B"> খ</label>
+          <label class="radio-opt"><input type="radio" name="qAnswer" value="C"> গ</label>
+          <label class="radio-opt"><input type="radio" name="qAnswer" value="D"> ঘ</label>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-label">ব্যাখ্যা (ঐচ্ছিক)</div>
+        <textarea class="form-textarea" id="qExplain" placeholder="সংক্ষিপ্ত ব্যাখ্যা (না দিলে ব্যাখ্যা বক্স দেখাবে না)"></textarea>
+      </div>
+      <button class="submit-btn" id="qSubmitBtn">প্রশ্ন যোগ করুন</button>
+      <div class="form-msg" id="qFormMsg"></div>
+    </div>
+
+    <div class="section-label" style="font-size:13.5px;color:var(--ink-muted);font-weight:600;margin-bottom:10px;">সদ্য যোগ করা প্রশ্ন</div>
+    <div id="customQList"><div class="loading">লোড হচ্ছে...</div></div>
+  </div>
+
+  <div class="panel" id="modelTestPanel">
+    <div style="margin-bottom:20px;">
+      <div style="font-size:13px;color:var(--ink-muted);margin-bottom:10px;">🎯 মডেল টেস্ট ম্যানেজমেন্ট সিস্টেম</div>
+      <button class="submit-btn" id="createModelTestBtn" style="background:var(--teal);font-weight:600;">➕ নতুন মডেল টেস্ট তৈরি করুন</button>
+    </div>
+    <div id="modelTestListContainer"></div>
+    <div id="modelTestEditPanel" style="display:none;"></div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+(function(){
+  "use strict";
+  var firebaseConfig = {
+    apiKey: "AIzaSyAzZOSUuK_TgliOClY1qTh2xtg8ayFxRPM",
+    authDomain: "dhms-admission-master.firebaseapp.com",
+    projectId: "dhms-admission-master",
+    storageBucket: "dhms-admission-master.firebasestorage.app",
+    messagingSenderId: "794922118272",
+    appId: "1:794922118272:web:2da02faf8f94286347ca65"
+  };
+  firebase.initializeApp(firebaseConfig);
+  var db = firebase.firestore();
+  var allUsers = [];
+  var searchTerm = "";
+  var currentViewingModelTestId = null;
+  var currentViewingCategory = null;
+  var editingQuestionId = null;
+  var editingQuestionModelTestId = null;
+  var currentEditingModelTestId = null;
+  var currentEditingTestName = null;
+  var currentViewingCategoryForEdit = null;
+
+  function byId(id){ return document.getElementById(id); }
+
+  function fmtDuration(sec){
+    sec = sec || 0;
+    var h = Math.floor(sec/3600);
+    var m = Math.floor((sec%3600)/60);
+    if(h>0) return h+' ঘ. '+m+' মি.';
+    return m+' মিনিট';
+  }
+  function fmtDate(ts){
+    if(!ts) return '—';
+    var d = ts.toDate ? ts.toDate() : new Date(ts);
+    return d.toLocaleDateString('bn-BD', {day:'numeric', month:'short'}) + ', ' + d.toLocaleTimeString('bn-BD', {hour:'2-digit', minute:'2-digit'});
+  }
+  var ONLINE_THRESHOLD_MS = 45000;
+  function isOnline(ts){
+    if(!ts) return false;
+    var d = ts.toDate ? ts.toDate() : new Date(ts);
+    return (Date.now() - d.getTime()) < ONLINE_THRESHOLD_MS;
+  }
+  function escapeHtml(s){
+    return String(s==null?'':s).replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
+
+  function renderStats(users){
+    var totalUsers = users.length;
+    var totalSeconds = users.reduce(function(a,u){return a+(u.totalSeconds||0);},0);
+    var totalAttempts = users.reduce(function(a,u){return a+(u.totalAttempted||0);},0);
+    var blockedCount = users.filter(function(u){return u.blocked===true;}).length;
+    var onlineCount = users.filter(function(u){return isOnline(u.lastSeen);}).length;
+
+    var statHtml = "";
+    statHtml += '<div class="stat-box"><div class="num" style="color:#16A34A;">'+onlineCount+'</div><div class="lbl">🟢 এখন অনলাইন</div></div>';
+    statHtml += '<div class="stat-box"><div class="num">'+totalUsers+'</div><div class="lbl">মোট ব্যবহারকারী</div></div>';
+    statHtml += '<div class="stat-box"><div class="num">'+fmtDuration(totalSeconds)+'</div><div class="lbl">সম্মিলিত ব্যবহারের সময়</div></div>';
+    statHtml += '<div class="stat-box"><div class="num">'+totalAttempts+'</div><div class="lbl">মোট প্রশ্নের চেষ্টা</div></div>';
+    statHtml += '<div class="stat-box" id="blockedStatBox" style="cursor:pointer;background:linear-gradient(135deg,var(--rose),#c026d3);color:white;">';
+    statHtml += '<div class="num">'+blockedCount+'</div>';
+    statHtml += '<div class="lbl">ব্লক করা (ক্লিক করুন)</div>';
+    statHtml += '</div>';
+    byId("statRow").innerHTML = statHtml;
+    
+    // Attach click handler for blocked stat box
+    var blockedBox = byId("blockedStatBox");
+    if(blockedBox){
+      blockedBox.addEventListener("click", function(e){
+        e.preventDefault();
+        e.stopPropagation();
+        console.log("Blocked box clicked, showing blocked users...");
+        showBlockedUsers();
+      });
+    } else {
+      console.log("Error: blockedStatBox not found");
+    }
+  }
+
+  function showBlockedUsers(){
+    console.log("showBlockedUsers called. allUsers:", allUsers);
+    var blockedUsers = allUsers.filter(function(u){ return u.blocked === true; });
+    console.log("Filtered blocked users:", blockedUsers);
+    
+    if(blockedUsers.length === 0){
+      alert("কোনো ব্লক করা ব্যবহারকারী নেই।");
+      return;
+    }
+    
+    var html = '<div style="background:var(--rose);color:white;padding:16px;border-radius:12px;margin-bottom:20px;"><div style="font-size:18px;font-weight:700;">ব্লক করা ব্যবহারকারীরা ('+blockedUsers.length+'টি)</div></div>';
+    html += '<table class="user-table"><tr><th>নাম</th><th>মোবাইল</th><th>বই কিনেছে</th><th>স্ট্যাটাস</th><th>অ্যাকশন</th></tr>';
+    
+    blockedUsers.forEach(function(user){
+      var active = (Date.now() - user.lastTick) < 30000 ? '●' : '○';
+      var bookPurchased = user.hasBookPurchase ? '✅ হ্যাঁ' : '❌ না';
+      html += '<tr>';
+        var nameDisplay = escapeHtml(user.name);
+        if(user.hasBookPurchase){
+          nameDisplay = '⭐ ' + nameDisplay;
+        }
+        html += '<td style="font-weight:'+(user.hasBookPurchase?'700':'400')+';color:'+(user.hasBookPurchase?'var(--teal)':'inherit')+';">'+nameDisplay+'</td>';
+      html += '<td>'+escapeHtml(user.mobile)+'</td>';
+      html += '<td><button class="btn-sm book-toggle-btn" data-name="'+escapeHtml(user.name)+'" data-status="'+(user.hasBookPurchase?1:0)+'">'+bookPurchased+'</button></td>';
+      html += '<td style="text-align:center;font-size:18px;color:'+(active==='●'?'var(--teal)':'#ccc')+';">'+active+'</td>';
+      html += '<td><button class="btn-sm block-btn" data-name="'+escapeHtml(user.name)+'" data-block="0">✅ আনব্লক</button> <button class="btn-sm del-btn" data-name="'+escapeHtml(user.name)+'">🗑️ ডিলিট</button></td>';
+      html += '</tr>';
+    });
+    
+    html += '</table>';
+    html += '<div style="margin-top:20px;"><button class="btn-secondary" onclick="load()">← ফিরে যান</button></div>';
+    
+    var userTableEl = byId("tableHolder");
+    if(!userTableEl){
+      console.log("userTable element not found, creating it");
+      var container = byId("userContainer") || byId("mainContent");
+      if(container){
+        userTableEl = document.createElement("div");
+        userTableEl.id = "userTable";
+        container.innerHTML = "";
+        container.appendChild(userTableEl);
+      }
+    }
+    if(userTableEl){
+      userTableEl.innerHTML = html;
+    } else {
+      console.error("Could not find or create userTable element");
+    }
+    
+    document.querySelectorAll(".book-toggle-btn").forEach(function(btn){
+      btn.addEventListener("click", function(e){
+        e.stopPropagation();
+        var userName = btn.getAttribute("data-name");
+        var currentStatus = btn.getAttribute("data-status") === "1";
+        
+        db.collection("users").where("name", "==", userName).get().then(function(snap){
+          if(snap.empty) return;
+          var userRef = snap.docs[0].ref;
+          userRef.update({hasBookPurchase: !currentStatus}).then(function(){
+            showBlockedUsers();
+          })['catch'](function(err){ alert("ব্যর্থ: "+err.message); });
+        });
+      });
+    });
+    
+    document.querySelectorAll(".block-btn").forEach(function(btn){
+      btn.addEventListener("click", function(e){
+        e.stopPropagation();
+        var name = btn.getAttribute("data-name");
+        var toBlock = parseInt(btn.getAttribute("data-block")) === 1;
+        db.collection("users").doc(name).set({blocked: toBlock}, {merge:true}).then(function(){
+          load();
+        })['catch'](function(err){ alert("ব্যর্থ: "+err.message); });
+      });
+    });
+    
+    document.querySelectorAll(".del-btn").forEach(function(btn){
+      btn.addEventListener("click", function(e){
+        e.stopPropagation();
+        var name = btn.getAttribute("data-name");
+        if(!confirm("ব্যবহারকারী মুছবেন? এটা আনডু করা যাবে না।")) return;
+        db.collection("users").doc(name)['delete']().then(function(){
+          load();
+        })['catch'](function(err){ alert("ব্যর্থ: "+err.message); });
+      });
+    });
+  }
+
+  function renderTable(){
+    var users = allUsers.slice();
+    if(searchTerm){
+      var t = searchTerm.toLowerCase();
+      users = users.filter(function(u){
+        return (u.name||'').toLowerCase().indexOf(t)!==-1 || (u.mobile||'').indexOf(t)!==-1;
+      });
+    }
+    if(users.length === 0){
+      byId("tableHolder").innerHTML = '<div class="empty">কোনো ব্যবহারকারী পাওয়া যায়নি।</div>';
+      return;
+    }
+    users.sort(function(a,b){
+      var onA = isOnline(a.lastSeen), onB = isOnline(b.lastSeen);
+      if(onA !== onB) return onA ? -1 : 1;
+      return (b.totalSeconds||0) - (a.totalSeconds||0);
+    });
+
+    var html = '<table><thead><tr>';
+    html += '<th>নাম</th><th>এখন</th><th>মোবাইল</th><th>বই কিনেছে</th><th>স্ট্যাটাস</th><th>মোট সময়</th><th>সেশন</th><th>প্রশ্ন চেষ্টা</th><th>সঠিক হার</th><th>প্রথম এসেছিল</th><th>শেষ সক্রিয়</th><th>অ্যাকশন</th>';
+    html += '</tr></thead><tbody>';
+    users.forEach(function(u){
+      var acc = u.totalAttempted ? Math.round(100*(u.totalCorrect||0)/u.totalAttempted) : null;
+      var accCls = acc===null ? '' : (acc>=75?'accu-good':(acc>=45?'accu-mid':'accu-low'));
+      var blocked = u.blocked === true;
+      var online = isOnline(u.lastSeen);
+      html += '<tr class="'+(blocked?'blocked-row':'')+'">';
+      var bookStatus = u.hasBookPurchase ? '✅ কিনেছে' : '❌ কেনা নেই';
+      var bookColor = u.hasBookPurchase ? 'var(--teal)' : '#999';
+      
+      html += '<td>'+(u.hasBookPurchase?'⭐ ':'') + escapeHtml(u.name)+'</td>';
+      html += '<td class="online-cell"><span class="dot '+(online?'dot-online':'dot-offline')+'"></span><span class="online-txt'+(online?' is-on':'')+'">'+(online?'অ্যাপে আছে':'অফলাইন')+'</span></td>';
+      html += '<td>'+escapeHtml(u.mobile)+'</td>';
+      html += '<td><button class="book-purchase-toggle" data-id="'+escapeHtml(u._id)+'" data-status="'+(u.hasBookPurchase?1:0)+'" style="padding:6px 12px;border-radius:6px;border:1px solid #ccc;background:'+bookColor+';color:white;cursor:pointer;font-size:12px;font-weight:600;">'+bookStatus+'</button></td>';
+      html += '<td><span class="status-pill '+(blocked?'status-blocked':'status-active')+'">'+(blocked?'ব্লক করা':'সক্রিয়')+'</span></td>';
+      html += '<td>'+fmtDuration(u.totalSeconds)+'</td>';
+      html += '<td>'+(u.sessions||0)+'</td>';
+      html += '<td>'+(u.totalAttempted||0)+'</td>';
+      html += '<td class="'+accCls+'">'+(acc===null?'—':acc+'%')+'</td>';
+      html += '<td class="muted">'+fmtDate(u.firstSeen)+'</td>';
+      html += '<td class="muted">'+fmtDate(u.lastSeen)+'</td>';
+      html += '<td>';
+      if(blocked){
+        html += '<button class="act-btn act-unblock" data-act="unblock" data-id="'+escapeHtml(u._id)+'">আনব্লক</button>';
+      } else {
+        html += '<button class="act-btn act-block" data-act="block" data-id="'+escapeHtml(u._id)+'">ব্লক</button>';
+      }
+      html += '<button class="act-btn act-delete" data-act="delete" data-id="'+escapeHtml(u._id)+'" data-name="'+escapeHtml(u.name)+'">মুছুন</button>';
+      html += '</td>';
+      html += '</tr>';
+    });
+    html += '</tbody></table>';
+    byId("tableHolder").innerHTML = html;
+
+    // Book purchase toggle
+    byId("tableHolder").querySelectorAll(".book-purchase-toggle").forEach(function(btn){
+      btn.addEventListener("click", function(e){
+        e.stopPropagation();
+        var userId = btn.getAttribute("data-id");
+        var currentStatus = parseInt(btn.getAttribute("data-status")) === 1;
+        var newStatus = !currentStatus;
+        
+        console.log("Toggling book purchase for user:", userId, "to", newStatus);
+        
+        db.collection("users").doc(userId).set({hasBookPurchase: newStatus}, {merge: true}).then(function(){
+          console.log("✅ Book purchase status updated");
+          load(); // Refresh the table
+        })['catch'](function(err){
+          alert("ব্যর্থ: " + err.message);
+        });
+      });
+    });
+    
+    byId("tableHolder").querySelectorAll(".act-block, .act-unblock").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var id = btn.getAttribute("data-id");
+        var toBlock = btn.getAttribute("data-act") === "block";
+        btn.disabled = true;
+        db.collection("users").doc(id).set({blocked: toBlock}, {merge:true}).then(function(){
+          load();
+        })['catch'](function(err){
+          alert("ব্যর্থ হয়েছে: " + err.message);
+          btn.disabled = false;
+        });
+      });
+    });
+    byId("tableHolder").querySelectorAll(".act-delete").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var id = btn.getAttribute("data-id");
+        var name = btn.getAttribute("data-name");
+        if(!confirm('"'+name+'" — এই ব্যবহারকারীর সব তথ্য স্থায়ীভাবে মুছে ফেলতে চান?')) return;
+        btn.disabled = true;
+        db.collection("users").doc(id)['delete']().then(function(){
+          load();
+        })['catch'](function(err){
+          alert("ব্যর্থ হয়েছে: " + err.message);
+          btn.disabled = false;
+        });
+      });
+    });
+  }
+
+  function loadUsers(){
+    load(); // Wrapper for compatibility
+  }
+
+
+  function load(){
+    byId("tableHolder").innerHTML = '<div class="loading">লোড হচ্ছে...</div>';
+    db.collection("users").get().then(function(snap){
+      var users = [];
+      snap.forEach(function(doc){
+        var d = doc.data();
+        d._id = doc.id;
+        users.push(d);
+      });
+      allUsers = users;
+      renderStats(users);
+      renderTable();
+      // Refresh table every time users are loaded
+      console.log("Users loaded:", users.length);
+    })['catch'](function(err){
+      byId("tableHolder").innerHTML = '<div class="empty">ডেটা লোড করা যায়নি।<br>'+escapeHtml(err.message)+'</div>';
+    });
+  }
+
+  byId("refreshBtn").addEventListener("click", load);
+  byId("searchInput").addEventListener("input", function(){
+    searchTerm = this.value.trim();
+    renderTable();
+  });
+  load();
+
+  // ---------------- Tabs ----------------
+  var SUBJECT_LABELS = {bangla:"বাংলা", english:"English", gonit:"গণিত", biggan:"বিজ্ঞান", gk:"সাধারণ জ্ঞান"};
+  byId("tabUsers").addEventListener("click", function(){
+    byId("tabUsers").classList.add("active");
+    byId("tabQuestions").classList.remove("active");
+    byId("usersPanel").classList.add("active");
+    byId("questionsPanel").classList.remove("active");
+  });
+  byId("tabQuestions").addEventListener("click", function(){
+    byId("tabQuestions").classList.add("active");
+    byId("tabUsers").classList.remove("active");
+    byId("tabModelTest").classList.remove("active");
+    byId("questionsPanel").classList.add("active");
+    byId("usersPanel").classList.remove("active");
+    byId("modelTestPanel").classList.remove("active");
+    loadCustomQuestions();
+  });
+
+  // ---------------- Add-question form ----------------
+  function showFormMsg(text, isErr){
+    var el = byId("qFormMsg");
+    el.textContent = text;
+    el.className = "form-msg " + (isErr ? "err" : "ok");
+  }
+
+  byId("qSubmitBtn").addEventListener("click", function(){
+    var subject = byId("qSubject").value;
+    var qText = byId("qText").value.trim();
+    var optA = byId("qOptA").value.trim();
+    var optB = byId("qOptB").value.trim();
+    var optC = byId("qOptC").value.trim();
+    var optD = byId("qOptD").value.trim();
+    var answer = (document.querySelector('input[name="qAnswer"]:checked')||{}).value;
+    var topic = byId("qTopic").value.trim();
+    var difficulty = (document.querySelector('input[name="qDifficulty"]:checked')||{}).value;
+    var tags = byId("qTags").value.trim();
+    var source = byId("qSource").value.trim();
+    var adminNote = byId("qAdminNote").value.trim();
+    var explanation = byId("qExplain").value.trim();
+
+    if(!qText || !optA || !optB || !optC || !optD || !answer){
+      showFormMsg("সব ঘর (অন্যান্য ফিল্ড ছাড়া) পূরণ করুন।", true);
+      return;
+    }
+
+    var btn = byId("qSubmitBtn");
+    btn.disabled = true;
+    var data = {
+      subject: subject,
+      q: qText,
+      options: [optA, optB, optC, optD],
+      answer: answer,
+      explanation: explanation,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+    if(topic) data.topic = topic;
+    if(difficulty) data.difficulty = difficulty;
+    if(tags) data.tags = tags.split(",").map(function(t){return t.trim();});
+    if(source) data.source = source;
+    if(adminNote) data.adminNote = adminNote;
+    
+    db.collection("custom_questions").add(data).then(function(){
+      showFormMsg("প্রশ্ন যোগ হয়েছে ✅", false);
+      byId("qText").value = "";
+      byId("qOptA").value = "";
+      byId("qOptB").value = "";
+      byId("qOptC").value = "";
+      byId("qOptD").value = "";
+      byId("qTopic").value = "";
+      byId("qTags").value = "";
+      byId("qSource").value = "";
+      byId("qAdminNote").value = "";
+      byId("qExplain").value = "";
+      btn.disabled = false;
+      loadCustomQuestions();
+    })['catch'](function(err){
+      showFormMsg("ব্যর্থ হয়েছে: " + err.message, true);
+      btn.disabled = false;
+    });
+  });
+
+  function loadCustomQuestions(){
+    var holder = byId("customQList");
+    holder.innerHTML = '<div class="loading">লোড হচ্ছে...</div>';
+    db.collection("custom_questions").orderBy("createdAt", "desc").limit(50).get().then(function(snap){
+      if(snap.empty){
+        holder.innerHTML = '<div class="empty">এখনো কোনো প্রশ্ন যোগ করা হয়নি।</div>';
+        return;
+      }
+      var html = "";
+      snap.forEach(function(doc){
+        var d = doc.data();
+        html += '<div class="qlist-item">';
+        html += '<button class="qdel" data-id="'+doc.id+'">মুছুন</button>';
+        html += '<div class="qtxt">'+escapeHtml(d.q)+'</div>';
+        html += '<div class="qmeta">'+(SUBJECT_LABELS[d.subject]||d.subject)+' · সঠিক উত্তর: '+escapeHtml(d.answer)+'</div>';
+        html += '</div>';
+      });
+      holder.innerHTML = html;
+      holder.querySelectorAll(".qdel").forEach(function(btn){
+        btn.addEventListener("click", function(){
+          if(!confirm("এই প্রশ্নটি মুছে ফেলতে চান?")) return;
+          db.collection("custom_questions").doc(btn.getAttribute("data-id"))['delete']().then(function(){
+            loadCustomQuestions();
+          })['catch'](function(err){ alert("ব্যর্থ হয়েছে: " + err.message); });
+        });
+      });
+    })['catch'](function(err){
+      holder.innerHTML = '<div class="empty">ডেটা লোড করা যায়নি।<br>'+escapeHtml(err.message)+'</div>';
+    });
+  }
+
+  // ============ মডেল টেস্ট ============
+  byId("tabModelTest").addEventListener("click", function(){
+    byId("tabModelTest").classList.add("active");
+    byId("tabUsers").classList.remove("active");
+    byId("tabQuestions").classList.remove("active");
+    byId("modelTestPanel").classList.add("active");
+    byId("usersPanel").classList.remove("active");
+    byId("questionsPanel").classList.remove("active");
+    loadModelTestList();
+  });
+
+  // ============ মডেল টেস্ট ম্যানেজমেন্ট ============
+  var CATEGORY_QUOTAS = {
+    "Bangla": 20,
+    "English": 20,
+    "Math": 10,
+    "General Science": 20,
+    "General Knowledge": 20
+  };
+  var currentEditingModelTestId = null;
+
+  byId("createModelTestBtn").addEventListener("click", function(){
+    db.collection("model_tests").get().then(function(snap){
+      var nextNum = snap.size + 1;
+      var numStr = String(nextNum).padStart(2, '0');
+      var testName = "Model Test " + numStr;
+      db.collection("model_tests").add({
+        name: testName,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      }).then(function(docRef){
+        currentEditingModelTestId = docRef.id;
+        renderModelTestEdit(docRef.id, testName);
+      })['catch'](function(err){
+        alert("ত্রুটি: " + err.message);
+      });
+    });
+  });
+
+  function loadModelTestList(){
+    var holder = byId("modelTestListContainer");
+    holder.innerHTML = '<div class="loading">লোড হচ্ছে...</div>';
+    db.collection("model_tests").orderBy("createdAt", "desc").get().then(function(snap){
+      if(snap.empty){
+        holder.innerHTML = '<div class="empty">এখনো কোনো মডেল টেস্ট তৈরি করা হয়নি।</div>';
+        return;
+      }
+      var html = "";
+      snap.forEach(function(doc){
+        var d = doc.data();
+        var testId = doc.id;
+        html += '<div class="form-card mt-item" style="margin-bottom:16px;cursor:pointer;transition:all 0.2s;" data-test-id="'+testId+'">';
+        html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:14px;">';
+        html += '<div style="flex:1;"><div style="font-size:18px;font-weight:700;color:var(--teal);">'+escapeHtml(d.name)+'</div></div>';
+        html += '<div style="font-size:20px;" class="toggle-icon">▼</div>';
+        html += '</div>';
+        html += '<div class="mt-expand-panel" style="display:none;padding:14px;border-top:1px solid var(--line);">';
+        html += '<div style="display:flex;gap:10px;margin-bottom:14px;">';
+        html += '<button class="mtEditBtn submit-btn" data-id="'+testId+'" style="flex:1;padding:8px 14px;font-size:12px;">✏️ সম্পাদনা</button>';
+        html += '<button class="mtDeleteBtn" data-id="'+testId+'" style="flex:1;padding:8px 14px;font-size:12px;background:var(--rose);color:white;border:none;border-radius:6px;cursor:pointer;">🗑️ মুছুন</button>';
+        html += '</div>';
+        html += '</div>';
+        html += '</div>';
+      });
+      holder.innerHTML = html;
+      
+      // Toggle panel on test item click
+      holder.querySelectorAll(".mt-item").forEach(function(card){
+        card.addEventListener("click", function(e){
+          // Don't toggle if clicking on buttons
+          if(e.target.closest("button")) return;
+          
+          var panel = card.querySelector(".mt-expand-panel");
+          var icon = card.querySelector(".toggle-icon");
+          var isExpanded = panel.style.display !== "none";
+          
+          if(isExpanded){
+            panel.style.display = "none";
+            icon.textContent = "▼";
+          } else {
+            panel.style.display = "block";
+            icon.textContent = "▲";
+          }
+        });
+      });
+      
+      holder.querySelectorAll(".mtEditBtn").forEach(function(btn){
+        btn.addEventListener("click", function(e){
+          e.stopPropagation();
+          var testId = btn.getAttribute("data-id");
+          db.collection("model_tests").doc(testId).get().then(function(doc){
+            renderModelTestEdit(testId, doc.data().name);
+          });
+        });
+      });
+      
+      holder.querySelectorAll(".mtDeleteBtn").forEach(function(btn){
+        btn.addEventListener("click", function(e){
+          e.stopPropagation();
+          if(!confirm("এই মডেল টেস্টটি মুছবেন? এর সব প্রশ্নও মুছে যাবে।")) return;
+          var testId = btn.getAttribute("data-id");
+          db.collection("model_test_questions").where("model_test_id", "==", testId).get().then(function(snap){
+            var batch = db.batch();
+            snap.forEach(function(doc){ batch['delete'](doc.ref); });
+            return batch.commit();
+          }).then(function(){
+            return db.collection("model_tests").doc(testId)['delete']();
+          }).then(function(){
+            loadModelTestList();
+          })['catch'](function(err){ alert("ব্যর্থ: " + err.message); });
+        });
+      });
+    })['catch'](function(err){
+      holder.innerHTML = '<div class="empty">লোড ব্যর্থ।</div>';
+    });
+  }
+
+  function renderModelTestEdit(modelTestId, testName){
+    currentEditingModelTestId = modelTestId;
+    var holder = byId("modelTestEditPanel");
+    holder.style.display = "block";
+    
+    // Top bar with back button
+    holder.innerHTML = '<div style="margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;">';
+    holder.innerHTML += '<button class="btn-secondary" id="backToMtList">← ফিরে যান</button>';
+    holder.innerHTML += '</div>';
+    
+    holder.innerHTML += '<div style="background:var(--teal);color:white;padding:20px;border-radius:12px;text-align:center;margin-bottom:20px;"><div style="font-size:24px;font-weight:700;">'+escapeHtml(testName)+'</div></div>';
+    holder.innerHTML += '<div id="mtCategoryStats" class="form-card" style="margin-bottom:20px;"></div>';
+    holder.innerHTML += '<div class="form-card" id="mtAddQuestionForm"></div>';
+    holder.innerHTML += '<div id="mtCategoryView" style="display:none;"></div>';
+    holder.innerHTML += '<div id="mtQuestionsList" style="margin-top:20px;"></div>';
+
+    byId("backToMtList").addEventListener("click", loadModelTestList);
+    
+    // Load category stats
+    loadCategoryStats(modelTestId, testName);
+    // Render add question form
+    renderAddQuestionForm(modelTestId, testName);
+    // Load questions by category
+    loadQuestionsByCategory(modelTestId);
+  }
+
+  function loadCategoryStats(modelTestId, testName){
+    var statsContainer = byId("mtCategoryStats");
+    statsContainer.innerHTML = '<div style="text-align:center;padding:20px;"><div style="font-size:18px;">⏳</div>লোড হচ্ছে...</div>';
+    
+    db.collection("model_test_questions").where("model_test_id", "==", modelTestId).get().then(function(snap){
+      var stats = {};
+      Object.keys(CATEGORY_QUOTAS).forEach(function(cat){ stats[cat] = 0; });
+      snap.forEach(function(doc){
+        var d = doc.data();
+        if(stats[d.category] !== undefined) stats[d.category]++;
+      });
+      
+      var html = "<div style='margin-bottom:14px;'><strong>বিভাগ অনুযায়ী অগ্রগতি (ক্লিক করলে সব প্রশ্ন দেখা যাবে):</strong></div>";
+      Object.keys(CATEGORY_QUOTAS).forEach(function(cat){
+        var count = stats[cat];
+        var quota = CATEGORY_QUOTAS[cat];
+        var pct = Math.round(count*100/quota);
+        var color = count === quota ? "var(--teal)" : "var(--amber)";
+        html += '<div style="margin-bottom:10px;padding:12px;border-radius:8px;background:#f9f9f9;border:1px solid #ddd;cursor:pointer;transition:all 0.2s;" class="cat-stat" data-mtid="'+escapeHtml(modelTestId)+'" data-cat="'+escapeHtml(cat)+'" onclick="handleCategoryClick(\''+modelTestId+'\',\''+cat+'\')">';
+        html += '<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;"><span style="font-weight:600;">'+escapeHtml(cat)+'</span><span style="font-weight:600;color:'+color+';">'+count+'/'+quota+'</span></div>';
+        html += '<div style="height:6px;background:#eee;border-radius:3px;overflow:hidden;"><div style="height:100%;width:'+pct+'%;background:'+color+';"></div></div>';
+        html += '</div>';
+      });
+      statsContainer.innerHTML = html;
+      
+      // Attach event listeners with event delegation
+      statsContainer.addEventListener("click", function(e){
+        var target = e.target.closest(".cat-stat");
+        if(target){
+          e.stopPropagation();
+          var cat = target.getAttribute("data-cat");
+          var mtid = target.getAttribute("data-mtid");
+          showCategoryQuestions(mtid, cat);
+        }
+      });
+    });
+  }
+
+  function handleCategoryClick(modelTestId, category){
+    showCategoryQuestions(modelTestId, category);
+  }
+
+
+  function showCategoryQuestions(modelTestId, category){
+    var holder = byId("mtCategoryView");
+    if(!holder){
+      alert("Error: mtCategoryView element not found");
+      return;
+    }
+    
+    holder.innerHTML = '<div style="text-align:center;padding:20px;"><div style="font-size:18px;">⏳</div>প্রশ্ন লোড হচ্ছে...</div>';
+    holder.style.display = "block";
+    byId("mtCategoryStats").style.display = "none";
+    byId("mtAddQuestionForm").style.display = "none";
+    byId("mtQuestionsList").style.display = "none";
+    
+    db.collection("model_test_questions").where("model_test_id", "==", modelTestId).get().then(function(snap){
+      // Filter by category client-side (avoids composite index requirement)
+      var docs = [];
+      snap.forEach(function(doc){
+        if(doc.data().category === category){
+          docs.push(doc);
+        }
+      });
+      
+      // Store current viewing category for use in edit
+      currentViewingCategoryForEdit = category;
+      
+      // Sort by createdAt descending (client-side)
+      docs.sort(function(a, b){
+        var timeA = a.data().createdAt ? a.data().createdAt.toDate().getTime() : 0;
+        var timeB = b.data().createdAt ? b.data().createdAt.toDate().getTime() : 0;
+        return timeB - timeA;
+      });
+      
+      // Store current category view state
+      currentViewingModelTestId = modelTestId;
+      currentViewingCategory = category;
+      
+      var html = '<div style="margin-bottom:14px;"><button class="btn-secondary" id="backFromCat">← সব বিভাগ দেখুন</button></div>';
+      html += '<div style="background:var(--amber);color:white;padding:16px;border-radius:12px;text-align:center;margin-bottom:20px;"><div style="font-size:18px;font-weight:700;">'+escapeHtml(category)+' ('+docs.length+'টি প্রশ্ন)</div></div>';
+      
+      if(docs.length === 0){
+        html += '<div class="empty">এই বিভাগে কোনো প্রশ্ন নেই।</div>';
+      } else {
+        docs.forEach(function(doc, idx){
+          var d = doc.data();
+          html += '<div class="qlist-item" style="margin-bottom:12px;background:white;padding:14px;border-radius:8px;border:1px solid #eee;">';
+          html += '<div style="margin-bottom:8px;font-weight:600;font-size:12px;color:var(--ink-muted);">প্রশ্ন '+(idx+1)+'</div>';
+          html += '<div class="qtxt" style="margin-bottom:10px;font-size:14px;">'+escapeHtml(d.q)+'</div>';
+          html += '<div style="margin-bottom:10px;font-size:12px;color:#666;background:#f5f5f5;padding:8px;border-radius:4px;">';
+          html += '<strong>ক)</strong> '+escapeHtml(d.options[0])+'<br>';
+          html += '<strong>খ)</strong> '+escapeHtml(d.options[1])+'<br>';
+          html += '<strong>গ)</strong> '+escapeHtml(d.options[2])+'<br>';
+          html += '<strong>ঘ)</strong> '+escapeHtml(d.options[3])+'<br>';
+          html += '</div>';
+          html += '<div style="margin-bottom:10px;font-size:12px;"><strong>সঠিক উত্তর:</strong> '+escapeHtml(d.answer)+'</div>';
+          if(d.explanation){
+            html += '<div style="margin-bottom:10px;font-size:12px;background:#fffacd;padding:8px;border-radius:4px;"><strong>ব্যাখ্যা:</strong> '+escapeHtml(d.explanation)+'</div>';
+          }
+          html += '<div style="display:flex;gap:8px;">';
+          html += '<button class="submit-btn edit-btn" data-mtid="'+modelTestId+'" data-qid="'+doc.id+'" style="flex:1;padding:8px 12px;font-size:11px;background:var(--teal);">✏️ এডিট করুন</button>';
+          html += '<button class="submit-btn delete-btn" data-mtid="'+modelTestId+'" data-qid="'+doc.id+'" data-cat="'+category+'" style="flex:1;padding:8px 12px;font-size:11px;background:var(--rose);">🗑️ ডিলিট করুন</button>';
+          html += '</div>';
+          html += '</div>';
+        });
+      }
+      
+      holder.innerHTML = html;
+      
+      // Attach event listeners for edit/delete buttons
+      holder.querySelectorAll(".edit-btn").forEach(function(btn){
+        btn.addEventListener("click", function(e){
+          e.preventDefault();
+          e.stopPropagation();
+          var mtid = btn.getAttribute("data-mtid");
+          var qid = btn.getAttribute("data-qid");
+          editQuestion(mtid, qid);
+        });
+      });
+      
+      holder.querySelectorAll(".delete-btn").forEach(function(btn){
+        btn.addEventListener("click", function(e){
+          e.preventDefault();
+          e.stopPropagation();
+          var mtid = btn.getAttribute("data-mtid");
+          var qid = btn.getAttribute("data-qid");
+          var cat = btn.getAttribute("data-cat");
+          deleteQuestion(mtid, qid, cat);
+        });
+      });
+      
+      // Attach back button click handler
+      var backBtn = byId("backFromCat");
+      if(backBtn){
+        backBtn.addEventListener("click", function(e){
+          e.preventDefault();
+          backFromCategoryView();
+        });
+      }
+    })['catch'](function(err){
+      holder.innerHTML = '<div class="empty">লোড ব্যর্থ: '+escapeHtml(err.message)+'</div>';
+    });
+  }
+
+  function backFromCategoryView(){
+    var holder = byId("mtCategoryView");
+    if(holder) holder.style.display = "none";
+    var stats = byId("mtCategoryStats");
+    if(stats) stats.style.display = "block";
+    var form = byId("mtAddQuestionForm");
+    if(form) form.style.display = "block";
+  }
+  
+  function backFromCategory(modelTestId, category){
+    backFromCategoryView();
+  }
+
+  function deleteQuestion(modelTestId, docId, category){
+    if(!confirm("এই প্রশ্নটি ডিলিট করবেন?")) return;
+    db.collection("model_test_questions").doc(docId)['delete']().then(function(){
+      loadCategoryStats(modelTestId, currentEditingTestName);
+      showCategoryQuestions(modelTestId, category);
+    })['catch'](function(err){ alert("ব্যর্থ: "+err.message); });
+  }
+  function editQuestion(modelTestId, questionId){
+    db.collection("model_test_questions").doc(questionId).get().then(function(doc){
+      var d = doc.data();
+      editingQuestionId = questionId;
+      editingQuestionModelTestId = modelTestId;
+      
+      var form = '<div style="margin-bottom:14px;"><button class="btn-secondary" id="cancelEditBtn">← বাতিল করুন</button></div>';
+      form += '<div style="background:var(--teal);color:white;padding:16px;border-radius:12px;margin-bottom:20px;"><div style="font-size:16px;font-weight:700;">প্রশ্ন এডিট করুন</div></div>';
+      form += '<div class="form-card">';
+      form += '<div class="form-row"><div class="form-label">বিভাগ</div><select class="form-select" id="editCategory">';
+      Object.keys(CATEGORY_QUOTAS).forEach(function(cat){
+        var sel = (cat === d.category) ? ' selected' : '';
+        form += '<option value="'+escapeHtml(cat)+'"'+sel+'>'+escapeHtml(cat)+'</option>';
+      });
+      form += '</select></div>';
+      form += '<div class="form-row"><div class="form-label">প্রশ্ন</div><textarea class="form-textarea" id="editQText">'+escapeHtml(d.q)+'</textarea></div>';
+      form += '<div class="form-row"><div class="form-label">অপশনসমূহ</div><div class="opt-grid">';
+      form += '<div class="opt-field"><span class="opt-letter">ক</span><input class="form-input" id="editOptA" value="'+escapeHtml(d.options[0])+'"></div>';
+      form += '<div class="opt-field"><span class="opt-letter">খ</span><input class="form-input" id="editOptB" value="'+escapeHtml(d.options[1])+'"></div>';
+      form += '<div class="opt-field"><span class="opt-letter">গ</span><input class="form-input" id="editOptC" value="'+escapeHtml(d.options[2])+'"></div>';
+      form += '<div class="opt-field"><span class="opt-letter">ঘ</span><input class="form-input" id="editOptD" value="'+escapeHtml(d.options[3])+'"></div>';
+      form += '</div></div>';
+      form += '<div class="form-row"><div class="form-label">সঠিক উত্তর</div><div class="radio-row">';
+      form += '<label class="radio-opt"><input type="radio" name="editAnswer" value="A" '+(d.answer==='A'?'checked':'')+' > ক</label>';
+      form += '<label class="radio-opt"><input type="radio" name="editAnswer" value="B" '+(d.answer==='B'?'checked':'')+' > খ</label>';
+      form += '<label class="radio-opt"><input type="radio" name="editAnswer" value="C" '+(d.answer==='C'?'checked':'')+' > গ</label>';
+      form += '<label class="radio-opt"><input type="radio" name="editAnswer" value="D" '+(d.answer==='D'?'checked':'')+' > ঘ</label>';
+      form += '</div></div>';
+      form += '<div class="form-row"><div class="form-label">ব্যাখ্যা (ঐচ্ছিক)</div><textarea class="form-textarea" id="editExplain">'+escapeHtml(d.explanation)+'</textarea></div>';
+      form += '<button class="submit-btn" id="saveEditBtn">সংরক্ষণ করুন</button>';
+      form += '<div class="form-msg" id="editMsg"></div>';
+      form += '</div>';
+      
+      byId("mtCategoryView").innerHTML = form;
+      byId("cancelEditBtn").addEventListener("click", function(){
+        showCategoryQuestions(modelTestId, currentViewingCategoryForEdit);
+      });
+      byId("saveEditBtn").addEventListener("click", function(){
+        var cat = byId("editCategory").value;
+        var qText = byId("editQText").value.trim();
+        var optA = byId("editOptA").value.trim();
+        var optB = byId("editOptB").value.trim();
+        var optC = byId("editOptC").value.trim();
+        var optD = byId("editOptD").value.trim();
+        var answer = (document.querySelector('input[name="editAnswer"]:checked')||{}).value;
+        var explain = byId("editExplain").value.trim();
+        
+        if(!qText || !optA || !optB || !optC || !optD || !answer){
+          byId("editMsg").textContent = "সব ঘর পূরণ করুন (ব্যাখ্যা ছাড়া)";
+          byId("editMsg").className = "form-msg err";
+          return;
+        }
+        
+        var btn = byId("saveEditBtn");
+        btn.disabled = true;
+        db.collection("model_test_questions").doc(editingQuestionId).update({
+          category: cat,
+          q: qText,
+          options: [optA, optB, optC, optD],
+          answer: answer,
+          explanation: explain
+        }).then(function(){
+          byId("editMsg").textContent = "✅ সংরক্ষণ হয়েছে";
+          byId("editMsg").className = "form-msg ok";
+          setTimeout(function(){
+            loadCategoryStats(modelTestId, currentEditingTestName);
+            showCategoryQuestions(modelTestId, cat);
+          }, 800);
+        })['catch'](function(err){
+          byId("editMsg").textContent = "ব্যর্থ: "+err.message;
+          byId("editMsg").className = "form-msg err";
+          btn.disabled = false;
+        });
+      });
+    });
+  }
+
+  function loadQuestionsByCategory(modelTestId){
+    db.collection("model_test_questions").where("model_test_id", "==", modelTestId).orderBy("createdAt", "desc").get().then(function(snap){
+      var holder = byId("mtQuestionsList");
+      if(snap.empty){
+        holder.innerHTML = '<div class="empty">এখনো কোনো প্রশ্ন যোগ করা হয়নি।</div>';
+        return;
+      }
+      var html = '<div style="font-size:13px;color:var(--ink-muted);font-weight:600;margin-bottom:10px;">📋 সব প্রশ্ন ('+ snap.size +'টি) — বিভাগে ক্লিক করে আরও বিস্তারিত দেখুন</div>';
+      holder.innerHTML = html;
+    })['catch'](function(err){
+      byId("mtQuestionsList").innerHTML = '<div class="empty">লোড ব্যর্থ।</div>';
+    });
+  }
+
+  function renderEditQuestionForm(modelTestId, qId, qData){
+    var editPanel = byId("mtQuestionsList").parentNode;
+    var form = '<div style="background:var(--amber);color:white;padding:14px;border-radius:8px;margin-bottom:14px;"><strong>✏️ প্রশ্ন সম্পাদনা</strong></div>';
+    form += '<div class="form-row"><div class="form-label">বিভাগ</div><select class="form-select" id="editCategory">';
+    Object.keys(CATEGORY_QUOTAS).forEach(function(cat){
+      var sel = cat === qData.category ? ' selected' : '';
+      form += '<option value="'+escapeHtml(cat)+'"'+sel+'>'+escapeHtml(cat)+'</option>';
+    });
+    form += '</select></div>';
+    form += '<div class="form-row"><div class="form-label">প্রশ্ন</div><textarea class="form-textarea" id="editQText">'+escapeHtml(qData.q)+'</textarea></div>';
+    form += '<div class="form-row"><div class="form-label">অপশনসমূহ</div><div class="opt-grid">';
+    form += '<div class="opt-field"><span class="opt-letter">ক</span><input class="form-input" id="editOptA" value="'+escapeHtml(qData.options[0])+'"></div>';
+    form += '<div class="opt-field"><span class="opt-letter">খ</span><input class="form-input" id="editOptB" value="'+escapeHtml(qData.options[1])+'"></div>';
+    form += '<div class="opt-field"><span class="opt-letter">গ</span><input class="form-input" id="editOptC" value="'+escapeHtml(qData.options[2])+'"></div>';
+    form += '<div class="opt-field"><span class="opt-letter">ঘ</span><input class="form-input" id="editOptD" value="'+escapeHtml(qData.options[3])+'"></div>';
+    form += '</div></div>';
+    form += '<div class="form-row"><div class="form-label">সঠিক উত্তর</div><div class="radio-row">';
+    form += '<label class="radio-opt"><input type="radio" name="editAnswer" value="A"'+(qData.answer==="A"?" checked":"")+'>ক</label>';
+    form += '<label class="radio-opt"><input type="radio" name="editAnswer" value="B"'+(qData.answer==="B"?" checked":"")+'>খ</label>';
+    form += '<label class="radio-opt"><input type="radio" name="editAnswer" value="C"'+(qData.answer==="C"?" checked":"")+'>গ</label>';
+    form += '<label class="radio-opt"><input type="radio" name="editAnswer" value="D"'+(qData.answer==="D"?" checked":"")+'>ঘ</label>';
+    form += '</div></div>';
+    form += '<div class="form-row"><div class="form-label">ব্যাখ্যা</div><textarea class="form-textarea" id="editExplain">'+escapeHtml(qData.explanation||"")+'</textarea></div>';
+    form += '<div style="display:flex;gap:8px;"><button id="editSaveBtn" class="submit-btn" style="flex:1;background:var(--teal);">💾 সংরক্ষণ করুন</button><button id="editCancelBtn" class="submit-btn" style="flex:1;background:var(--ink-muted);">বাতিল করুন</button></div>';
+    form += '<div class="form-msg" id="editMsg"></div>';
+    
+    editPanel.innerHTML = form;
+    
+    byId("editSaveBtn").addEventListener("click", function(){
+      var newCat = byId("editCategory").value;
+      var newQ = byId("editQText").value.trim();
+      var newOptA = byId("editOptA").value.trim();
+      var newOptB = byId("editOptB").value.trim();
+      var newOptC = byId("editOptC").value.trim();
+      var newOptD = byId("editOptD").value.trim();
+      var newAns = (document.querySelector('input[name="editAnswer"]:checked')||{}).value;
+      var newExpl = byId("editExplain").value.trim();
+      
+      if(!newQ || !newOptA || !newOptB || !newOptC || !newOptD || !newAns){
+        byId("editMsg").textContent = "সব ঘর পূরণ করুন (ব্যাখ্যা ছাড়া)";
+        byId("editMsg").className = "form-msg err";
+        return;
+      }
+      
+      var btn = byId("editSaveBtn");
+      btn.disabled = true;
+      db.collection("model_test_questions").doc(qId).update({
+        category: newCat,
+        q: newQ,
+        options: [newOptA, newOptB, newOptC, newOptD],
+        answer: newAns,
+        explanation: newExpl
+      }).then(function(){
+        byId("editMsg").textContent = "✅ আপডেট হয়েছে";
+        byId("editMsg").className = "form-msg ok";
+        setTimeout(function(){
+          loadModelTestQuestions(modelTestId);
+        }, 500);
+      })['catch'](function(err){
+        byId("editMsg").textContent = "ব্যর্থ: " + err.message;
+        byId("editMsg").className = "form-msg err";
+        btn.disabled = false;
+      });
+    });
+    
+    byId("editCancelBtn").addEventListener("click", function(){
+      loadModelTestQuestions(modelTestId);
+    });
+  }
+
+  function renderAddQuestionForm(modelTestId, testName){
+    var form = '<div class="form-row"><div class="form-label">বিভাগ</div><select class="form-select" id="mtCategory">';
+    Object.keys(CATEGORY_QUOTAS).forEach(function(cat){
+      form += '<option value="'+escapeHtml(cat)+'">'+escapeHtml(cat)+'</option>';
+    });
+    form += '</select></div>';
+    form += '<div class="form-row"><div class="form-label">প্রশ্ন</div><textarea class="form-textarea" id="mtNewQText" placeholder="প্রশ্নটি লিখুন..."></textarea></div>';
+    form += '<div class="form-row"><div class="form-label">অপশনসমূহ</div>';
+    form += '<div class="opt-grid">';
+    form += '<div class="opt-field"><span class="opt-letter">ক</span><input class="form-input" id="mtNewOptA" placeholder="ক"></div>';
+    form += '<div class="opt-field"><span class="opt-letter">খ</span><input class="form-input" id="mtNewOptB" placeholder="খ"></div>';
+    form += '<div class="opt-field"><span class="opt-letter">গ</span><input class="form-input" id="mtNewOptC" placeholder="গ"></div>';
+    form += '<div class="opt-field"><span class="opt-letter">ঘ</span><input class="form-input" id="mtNewOptD" placeholder="ঘ"></div>';
+    form += '</div></div>';
+    form += '<div class="form-row"><div class="form-label">সঠিক উত্তর</div><div class="radio-row">';
+    form += '<label class="radio-opt"><input type="radio" name="mtNewAnswer" value="A" checked> ক</label>';
+    form += '<label class="radio-opt"><input type="radio" name="mtNewAnswer" value="B"> খ</label>';
+    form += '<label class="radio-opt"><input type="radio" name="mtNewAnswer" value="C"> গ</label>';
+    form += '<label class="radio-opt"><input type="radio" name="mtNewAnswer" value="D"> ঘ</label>';
+    form += '</div></div>';
+    form += '<div class="form-row"><div class="form-label">ব্যাখ্যা (ঐচ্ছিক)</div><textarea class="form-textarea" id="mtNewExplain" placeholder="ব্যাখ্যা..."></textarea></div>';
+    form += '<button class="submit-btn" id="mtAddQuestionBtn">প্রশ্ন যোগ করুন</button>';
+    form += '<div class="form-msg" id="mtAddMsg"></div>';
+    byId("mtAddQuestionForm").innerHTML = form;
+
+    byId("mtAddQuestionBtn").addEventListener("click", function(){
+      var cat = byId("mtCategory").value;
+      var qText = byId("mtNewQText").value.trim();
+      var optA = byId("mtNewOptA").value.trim();
+      var optB = byId("mtNewOptB").value.trim();
+      var optC = byId("mtNewOptC").value.trim();
+      var optD = byId("mtNewOptD").value.trim();
+      var answer = (document.querySelector('input[name="mtNewAnswer"]:checked')||{}).value;
+      var explain = byId("mtNewExplain").value.trim();
+
+      if(!qText || !optA || !optB || !optC || !optD || !answer){
+        byId("mtAddMsg").textContent = "সব ঘর পূরণ করুন (ব্যাখ্যা ছাড়া)";
+        byId("mtAddMsg").className = "form-msg err";
+        return;
+      }
+
+      var btn = byId("mtAddQuestionBtn");
+      btn.disabled = true;
+      db.collection("model_test_questions").add({
+        model_test_id: modelTestId,
+        model_test_name: testName,
+        category: cat,
+        q: qText,
+        options: [optA, optB, optC, optD],
+        answer: answer,
+        explanation: explain,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      }).then(function(){
+        byId("mtAddMsg").textContent = "✅ প্রশ্ন যোগ হয়েছে";
+        byId("mtAddMsg").className = "form-msg ok";
+        byId("mtNewQText").value = "";
+        byId("mtNewOptA").value = "";
+        byId("mtNewOptB").value = "";
+        byId("mtNewOptC").value = "";
+        byId("mtNewOptD").value = "";
+        byId("mtNewExplain").value = "";
+        btn.disabled = false;
+        loadCategoryStats(modelTestId, testName);
+        loadQuestionsByCategory(modelTestId);
+      })['catch'](function(err){
+        byId("mtAddMsg").textContent = "ব্যর্থ: " + err.message;
+        byId("mtAddMsg").className = "form-msg err";
+        btn.disabled = false;
+      });
+    });
+  }
+
+})();
+</script>
+</body>
+</html>
