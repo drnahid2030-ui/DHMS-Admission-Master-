@@ -426,22 +426,6 @@
   function renderTable(){
     var users = allUsers.slice();
     
-    // Apply performance filter
-    if(filterLevel && filterLevel !== "all"){
-      users = users.filter(function(u){
-        var acc = u.totalAttempted ? Math.round(100*(u.totalCorrect||0)/u.totalAttempted) : 0;
-        
-        if(filterLevel === "high"){
-          return acc >= 70; // 70% or more
-        } else if(filterLevel === "medium"){
-          return acc >= 45 && acc < 70; // 45-70%
-        } else if(filterLevel === "low"){
-          return acc < 45; // Less than 45%
-        }
-        return true;
-      });
-    }
-    
     // Apply search filter
     if(searchTerm){
       var t = searchTerm.toLowerCase();
@@ -573,22 +557,52 @@
 
   function load(){
     byId("tableHolder").innerHTML = '<div class="loading">লোড হচ্ছে...</div>';
-    db.collection("users").get().then(function(snap){
-      var users = [];
-      snap.forEach(function(doc){
-        var d = doc.data();
-        d._id = doc.id;
-        users.push(d);
+    try {
+      db.collection("users").get().then(function(snap){
+        try {
+          var users = [];
+          snap.forEach(function(doc){
+            var d = doc.data();
+            d._id = doc.id;
+            users.push(d);
+          });
+          allUsers = users;
+          console.log("✅ Users loaded:", users.length);
+          
+          // Call render functions with error handling
+          try {
+            renderStats(users);
+            console.log("✅ Stats rendered");
+          } catch(e) {
+            console.error("renderStats error:", e);
+          }
+          
+          try {
+            renderUsageFilters();
+            console.log("✅ Filters rendered");
+          } catch(e) {
+            console.error("renderUsageFilters error:", e);
+          }
+          
+          try {
+            renderTable();
+            console.log("✅ Table rendered");
+          } catch(e) {
+            console.error("renderTable error:", e);
+            byId("tableHolder").innerHTML = '<div class="empty">টেবিল রেন্ডার করতে ব্যর্থ: '+e.message+'</div>';
+          }
+        } catch(e) {
+          console.error("Data processing error:", e);
+          byId("tableHolder").innerHTML = '<div class="empty">ডেটা প্রক্রিয়া করতে ব্যর্থ।</div>';
+        }
+      })['catch'](function(err){
+        console.error("Firestore query error:", err);
+        byId("tableHolder").innerHTML = '<div class="empty">ডেটা লোড করা যায়নি।<br>'+escapeHtml(err.message)+'</div>';
       });
-      allUsers = users;
-      renderStats(users);
-      renderUsageFilters();
-      renderTable();
-      // Refresh table every time users are loaded
-      console.log("Users loaded:", users.length);
-    })['catch'](function(err){
-      byId("tableHolder").innerHTML = '<div class="empty">ডেটা লোড করা যায়নি।<br>'+escapeHtml(err.message)+'</div>';
-    });
+    } catch(e) {
+      console.error("Load function error:", e);
+      byId("tableHolder").innerHTML = '<div class="empty">প্রোগ্রাম ত্রুটি: '+e.message+'</div>';
+    }
   }
 
   byId("refreshBtn").addEventListener("click", load);
