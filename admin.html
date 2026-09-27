@@ -112,7 +112,10 @@
   </div>
 
   <div class="panel active" id="usersPanel">
-  <div class="stat-row" id="statRow"></div>
+  <div class="stat-row" id="statRow" style="min-height:80px;"></div>
+  <div id="loadStatus" style="padding:10px;background:#fef08a;color:#854d0e;text-align:center;display:none;border-radius:6px;margin:8px 0;">
+    🟡 ডেটা লোড করছে...
+  </div>
   <div class="toolbar">
     <button class="refresh-btn" id="refreshBtn">🔄 রিফ্রেশ করুন</button>
     <input class="search-input" id="searchInput" type="text" placeholder="নাম বা মোবাইল দিয়ে খুঁজুন...">
@@ -224,7 +227,16 @@
   var db = firebase.firestore();
   var allUsers = [];
   var searchTerm = "";
-  var usageFilter = 'all'; // 'all', 'high', 'medium', 'low'
+  var usageFilter = 'all';
+  
+  // Initialize check
+  console.log("🟢 === ADMIN PANEL INITIALIZED ===");
+  console.log("Firebase app:", firebase.app().name);
+  console.log("Project:", "dhms-admission-master");
+  console.log("Firestore:", db ? "✅ Ready" : "❌ Failed");
+  console.log("Timestamp:", new Date().toLocaleString());
+  console.log("User localStorage:", localStorage.getItem("dhms_user_v1") ? "✅ Found" : "❌ Not found");
+  console.log("============================================"); // 'all', 'high', 'medium', 'low'
   var currentViewingModelTestId = null;
   var currentViewingCategory = null;
   var editingQuestionId = null;
@@ -1383,6 +1395,106 @@
       window.autoCheckFirebase();
     }
   }, 2000);
-  </script>
+  
+  // Create diagnostic page
+  window.showDiagnostics = function(){
+    var html = '<div style="padding:20px;background:#f5f5f5;border-radius:8px;font-family:monospace;font-size:12px;line-height:1.8;">';
+    
+    html += '<h3 style="margin-top:0;color:#0F766E;">🔍 Firebase Diagnostics</h3>';
+    
+    // Check Firebase
+    html += '<div style="background:white;padding:12px;margin:8px 0;border-radius:6px;">';
+    html += '<strong>Firebase App:</strong> ' + (firebase.app() ? '✅ Initialized' : '❌ Not initialized') + '<br>';
+    html += '<strong>Firestore:</strong> ' + (db ? '✅ Connected' : '❌ Not connected') + '<br>';
+    html += '<strong>Config Project:</strong> ' + 'dhms-admission-master' + '<br>';
+    html += '</div>';
+    
+    // Check allUsers
+    html += '<div style="background:white;padding:12px;margin:8px 0;border-radius:6px;">';
+    html += '<strong>Users Loaded:</strong> ' + allUsers.length + '<br>';
+    if(allUsers.length > 0){
+      html += '<strong>First User:</strong><br>';
+      var u = allUsers[0];
+      html += '  Name: ' + (u.name || 'N/A') + '<br>';
+      html += '  Mobile: ' + (u.mobile || 'N/A') + '<br>';
+      html += '  Blocked: ' + (u.blocked || false) + '<br>';
+    }
+    html += '</div>';
+    
+    // Test query
+    html += '<div style="background:white;padding:12px;margin:8px 0;border-radius:6px;">';
+    html += '<button onclick="window.testFirebaseQuery()" style="padding:8px 12px;background:#0F766E;color:white;border:none;border-radius:4px;cursor:pointer;">Run Test Query</button>';
+    html += '<div id="queryResult" style="margin-top:12px;"></div>';
+    html += '</div>';
+    
+    html += '</div>';
+    
+    byId("tableHolder").innerHTML = html;
+  };
+  
+  window.testFirebaseQuery = function(){
+    var resultDiv = byId("queryResult");
+    resultDiv.innerHTML = '🟡 Testing...';
+    
+    console.log("🧪 Starting test query...");
+    
+    db.collection("users").limit(5).get().then(function(snap){
+      console.log("✅ Query successful. Found:", snap.size, "documents");
+      
+      var html = '<div style="color:#10b981;background:#f0fdf4;padding:10px;border-radius:4px;border-left:4px solid #10b981;">';
+      html += '<strong>✅ Query Success!</strong><br>';
+      html += 'Documents found: ' + snap.size + '<br><br>';
+      html += '<strong>Sample Data:</strong><br>';
+      
+      snap.docs.forEach(function(doc, idx){
+        html += '<div style="background:white;padding:8px;margin:4px 0;border-radius:3px;">';
+        html += '<strong>[' + idx + ']</strong> ' + JSON.stringify(doc.data()).substring(0, 100) + '...<br>';
+        html += '<small>ID: ' + doc.id + '</small>';
+        html += '</div>';
+      });
+      
+      html += '<br><button onclick="window.load()" style="padding:8px 12px;background:#10b981;color:white;border:none;border-radius:4px;cursor:pointer;">Load All Users</button>';
+      html += '</div>';
+      
+      resultDiv.innerHTML = html;
+    })['catch'](function(err){
+      console.error("❌ Query failed:", err.code, err.message);
+      
+      var html = '<div style="color:#dc2626;background:#fef2f2;padding:10px;border-radius:4px;border-left:4px solid #dc2626;">';
+      html += '<strong>❌ Query Failed!</strong><br>';
+      html += '<strong>Error Code:</strong> ' + err.code + '<br>';
+      html += '<strong>Message:</strong> ' + err.message + '<br><br>';
+      
+      if(err.code === 'permission-denied'){
+        html += '<div style="background:white;padding:10px;border-radius:4px;margin-top:10px;">';
+        html += '<strong>⚠️  Firestore Security Rules Issue</strong><br><br>';
+        html += '1. Go to Firebase Console<br>';
+        html += '2. Project: dhms-admission-master<br>';
+        html += '3. Firestore Database → Rules<br>';
+        html += '4. Add this rule:<br><br>';
+        html += '<code style="background:#f5f5f5;padding:8px;display:block;border-radius:4px;">';
+        html += 'rules_version = '2';<br>';
+        html += 'service cloud.firestore {<br>';
+        html += '  match /databases/{database}/documents {<br>';
+        html += '    match /{document=**} {<br>';
+        html += '      allow read, write: if true;<br>';
+        html += '    }<br>';
+        html += '  }<br>';
+        html += '}';
+        html += '</code>';
+        html += '</div>';
+      } else if(err.code === 'unavailable'){
+        html += '<div style="background:white;padding:10px;border-radius:4px;margin-top:10px;">';
+        html += '<strong>🌐 Network Issue</strong><br>';
+        html += 'Firebase service may be offline or network is blocked.';
+        html += '</div>';
+      }
+      
+      html += '</div>';
+      
+      resultDiv.innerHTML = html;
+    });
+  };
+</script>
 </body>
 </html>
