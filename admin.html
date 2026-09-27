@@ -120,7 +120,7 @@
     <button class="refresh-btn" id="refreshBtn">🔄 রিফ্রেশ করুন</button>
     <input class="search-input" id="searchInput" type="text" placeholder="নাম বা মোবাইল দিয়ে খুঁজুন...">
   </div>
-  <div id="filterContainer" style="padding:12px 16px;border-bottom:2px solid #eee;display:flex;gap:8px;flex-wrap:wrap;"></div>
+
   <div class="table-wrap">
     <div id="statusMessage" style="padding:20px;text-align:center;color:#666;font-size:14px;">
       ⏳ Firebase থেকে ডেটা লোড হচ্ছে...
@@ -227,7 +227,6 @@
   var db = firebase.firestore();
   var allUsers = [];
   var searchTerm = "";
-  var usageFilter = 'all';
   
   // Initialize check
   console.log("🟢 === ADMIN PANEL INITIALIZED ===");
@@ -399,71 +398,6 @@
     });
   }
 
-  function getUsageCategory(user){
-    var totalSeconds = user.totalSeconds || 0;
-    var sessions = user.sessions || 0;
-    
-    // High: >2 hours or >5 sessions
-    if(totalSeconds > 7200 || sessions > 5){
-      return 'high';
-    }
-    // Medium: 30min-2hrs or 2-5 sessions
-    if(totalSeconds >= 1800 || sessions >= 2){
-      return 'medium';
-    }
-    // Low: <30min or <2 sessions
-    return 'low';
-  }
-  
-  function renderUsageFilters(){
-    var high = allUsers.filter(function(u){ return getUsageCategory(u) === 'high'; }).length;
-    var medium = allUsers.filter(function(u){ return getUsageCategory(u) === 'medium'; }).length;
-    var low = allUsers.filter(function(u){ return getUsageCategory(u) === 'low'; }).length;
-    
-    var html = '<div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">';
-    html += '<button class="filter-btn '+(usageFilter==='all'?'active':'')+'" data-filter="all" style="padding:8px 16px;border:2px solid '+(usageFilter==='all'?'var(--teal)':'#ccc')+';background:'+(usageFilter==='all'?'var(--teal)':'white')+';color:'+(usageFilter==='all'?'white':'#333')+';border-radius:6px;cursor:pointer;font-weight:600;">সব ('+allUsers.length+')</button>';
-    html += '<button class="filter-btn '+(usageFilter==='high'?'active':'')+'" data-filter="high" style="padding:8px 16px;border:2px solid '+(usageFilter==='high'?'#10b981':'#ccc')+';background:'+(usageFilter==='high'?'#10b981':'white')+';color:'+(usageFilter==='high'?'white':'#333')+';border-radius:6px;cursor:pointer;font-weight:600;">🔥 বেশি ব্যবহার ('+high+')</button>';
-    html += '<button class="filter-btn '+(usageFilter==='medium'?'active':'')+'" data-filter="medium" style="padding:8px 16px;border:2px solid '+(usageFilter==='medium'?'#f59e0b':'#ccc')+';background:'+(usageFilter==='medium'?'#f59e0b':'white')+';color:'+(usageFilter==='medium'?'white':'#333')+';border-radius:6px;cursor:pointer;font-weight:600;">⚡ মধ্যম ('+medium+')</button>';
-    html += '<button class="filter-btn '+(usageFilter==='low'?'active':'')+'" data-filter="low" style="padding:8px 16px;border:2px solid '+(usageFilter==='low'?'#6b7280':'#ccc')+';background:'+(usageFilter==='low'?'#6b7280':'white')+';color:'+(usageFilter==='low'?'white':'#333')+';border-radius:6px;cursor:pointer;font-weight:600;">💤 কম ('+low+')</button>';
-    html += '</div>';
-    
-    byId("filterContainer").innerHTML = html;
-    
-    // Attach click handlers to all filter buttons
-    var filterBtns = byId("filterContainer").querySelectorAll(".filter-btn");
-    console.log("🟡 Attaching listeners to", filterBtns.length, "filter buttons");
-    
-    filterBtns.forEach(function(btn){
-      btn.addEventListener("click", function(e){
-        e.preventDefault();
-        usageFilter = btn.getAttribute("data-filter");
-        console.log("✅ Filter changed to:", usageFilter);
-        
-        // Update button styles
-        filterBtns.forEach(function(b){ b.style.background = 'white'; b.style.color = '#333'; b.style.borderColor = '#ccc'; });
-        
-        if(usageFilter === 'all'){
-          btn.style.background = 'var(--teal)';
-          btn.style.color = 'white';
-          btn.style.borderColor = 'var(--teal)';
-        } else if(usageFilter === 'high'){
-          btn.style.background = '#10b981';
-          btn.style.color = 'white';
-          btn.style.borderColor = '#10b981';
-        } else if(usageFilter === 'medium'){
-          btn.style.background = '#f59e0b';
-          btn.style.color = 'white';
-          btn.style.borderColor = '#f59e0b';
-        } else if(usageFilter === 'low'){
-          btn.style.background = '#6b7280';
-          btn.style.color = 'white';
-          btn.style.borderColor = '#6b7280';
-        }
-        
-        renderTable();
-      });
-    });
-  }
 
   function renderTable(){
     var users = allUsers.slice();
@@ -473,13 +407,6 @@
       var t = searchTerm.toLowerCase();
       users = users.filter(function(u){
         return (u.name||'').toLowerCase().indexOf(t)!==-1 || (u.mobile||'').indexOf(t)!==-1;
-      });
-    }
-    
-    // Apply usage filter
-    if(usageFilter !== 'all'){
-      users = users.filter(function(u){
-        return getUsageCategory(u) === usageFilter;
       });
     }
     if(users.length === 0){
@@ -509,17 +436,7 @@
       html += '<td>'+escapeHtml(u.mobile)+'</td>';
       html += '<td><button class="book-purchase-toggle" data-id="'+escapeHtml(u._id)+'" data-status="'+(u.hasBookPurchase?1:0)+'" style="padding:6px 12px;border-radius:6px;border:1px solid #ccc;background:'+bookColor+';color:white;cursor:pointer;font-size:12px;font-weight:600;">'+bookStatus+'</button></td>';
       html += '<td><span class="status-pill '+(blocked?'status-blocked':'status-active')+'">'+(blocked?'ব্লক করা':'সক্রিয়')+'</span></td>';
-      var usageCategory = getUsageCategory(u);
-      var usageBadge = '';
-      if(usageCategory === 'high'){
-        usageBadge = '<span style="display:inline-block;background:#10b981;color:white;padding:4px 8px;border-radius:4px;font-size:11px;font-weight:600;">🔥 বেশি</span>';
-      } else if(usageCategory === 'medium'){
-        usageBadge = '<span style="display:inline-block;background:#f59e0b;color:white;padding:4px 8px;border-radius:4px;font-size:11px;font-weight:600;">⚡ মধ্যম</span>';
-      } else {
-        usageBadge = '<span style="display:inline-block;background:#6b7280;color:white;padding:4px 8px;border-radius:4px;font-size:11px;font-weight:600;">💤 কম</span>';
-      }
-      
-      html += '<td>'+fmtDuration(u.totalSeconds)+' '+usageBadge+'</td>';
+      html += '<td>'+fmtDuration(u.totalSeconds)+'</td>';
       html += '<td>'+(u.sessions||0)+'</td>';
       html += '<td>'+(u.totalAttempted||0)+'</td>';
       var perfBadge = '';
@@ -645,15 +562,6 @@
           }
           
           try {
-            renderUsageFilters();
-            console.log("✅ Filters rendered");
-            byId("statusMessage").innerHTML = '📊 ফিল্টার দেখাচ্ছি...';
-          } catch(e) {
-            console.error("renderUsageFilters error:", e);
-            byId("statusMessage").innerHTML = '❌ Filter: '+e.message;
-          }
-          
-          try {
             renderTable();
             console.log("✅ Table rendered");
             byId("statusMessage").innerHTML = '✅ সম্পন্ন!';
@@ -668,16 +576,24 @@
           byId("tableHolder").innerHTML = '<div class="empty">❌ ডেটা প্রক্রিয়া করতে ব্যর্থ: '+e.message+'</div>';
         }
       })['catch'](function(err){
+        clearTimeout(queryTimeout);
         console.error("❌ Firestore query error:", err.code, err.message);
         var errorMsg = 'ডেটা লোড করা যায়নি।';
+        var errorHtml = '';
+        
         if(err.code === 'permission-denied'){
-          errorMsg = '❌ অনুমতি নেই (Firebase Rules চেক করুন)';
+          errorMsg = '❌ Firestore Security Rules দ্বারা blocked';
+          errorHtml = '<div style="background:#fef2f2;padding:15px;border-radius:6px;margin-top:15px;"><strong>সমাধান:</strong><br>1. Firebase Console খুলুন<br>2. Firestore Rules tab যান<br>3. এই কোড দিন:<br><code style="background:#f5f5f5;padding:5px;display:inline-block;">allow read, write: if true;</code></div>';
         } else if(err.code === 'unavailable'){
-          errorMsg = '❌ Firebase অনলাইন নেই';
+          errorMsg = '❌ Firebase সেবা অনলাইন নেই বা নেটওয়ার্ক এরর';
+        } else if(err.code === 'not-found'){
+          errorMsg = '❌ Users collection পাওয়া যায়নি';
         } else {
-          errorMsg = '❌ ' + err.message;
+          errorMsg = '❌ Error: ' + err.code + ' - ' + err.message;
         }
-        byId("tableHolder").innerHTML = '<div class="empty">'+errorMsg+'<br><small>Console (F12) দেখুন</small></div>';
+        
+        byId("tableHolder").innerHTML = '<div class="empty" style="color:#dc2626;">'+errorMsg+errorHtml+'<br><br><button onclick="testFirebaseConnection()" style="padding:8px 16px;background:#dc2626;color:white;border:none;border-radius:4px;cursor:pointer;margin-top:10px;">Test Connection</button></div>';
+        byId("statusMessage").innerHTML = '❌ ' + errorMsg;
       });
     } catch(e) {
       console.error("❌ Load function error:", e);
@@ -728,9 +644,6 @@
       renderTable();
     });
   });
-  
-  // Set initial active button (after renderUsageFilters creates the buttons)
-  // This will be done inside renderUsageFilters() instead
   
   load();
 
@@ -1396,41 +1309,7 @@
     }
   }, 2000);
   
-  // Create diagnostic page
-  window.showDiagnostics = function(){
-    var html = '<div style="padding:20px;background:#f5f5f5;border-radius:8px;font-family:monospace;font-size:12px;line-height:1.8;">';
-    
-    html += '<h3 style="margin-top:0;color:#0F766E;">🔍 Firebase Diagnostics</h3>';
-    
-    // Check Firebase
-    html += '<div style="background:white;padding:12px;margin:8px 0;border-radius:6px;">';
-    html += '<strong>Firebase App:</strong> ' + (firebase.app() ? '✅ Initialized' : '❌ Not initialized') + '<br>';
-    html += '<strong>Firestore:</strong> ' + (db ? '✅ Connected' : '❌ Not connected') + '<br>';
-    html += '<strong>Config Project:</strong> ' + 'dhms-admission-master' + '<br>';
-    html += '</div>';
-    
-    // Check allUsers
-    html += '<div style="background:white;padding:12px;margin:8px 0;border-radius:6px;">';
-    html += '<strong>Users Loaded:</strong> ' + allUsers.length + '<br>';
-    if(allUsers.length > 0){
-      html += '<strong>First User:</strong><br>';
-      var u = allUsers[0];
-      html += '  Name: ' + (u.name || 'N/A') + '<br>';
-      html += '  Mobile: ' + (u.mobile || 'N/A') + '<br>';
-      html += '  Blocked: ' + (u.blocked || false) + '<br>';
-    }
-    html += '</div>';
-    
-    // Test query
-    html += '<div style="background:white;padding:12px;margin:8px 0;border-radius:6px;">';
-    html += '<button onclick="window.testFirebaseQuery()" style="padding:8px 12px;background:#0F766E;color:white;border:none;border-radius:4px;cursor:pointer;">Run Test Query</button>';
-    html += '<div id="queryResult" style="margin-top:12px;"></div>';
-    html += '</div>';
-    
-    html += '</div>';
-    
-    byId("tableHolder").innerHTML = html;
-  };
+
   
   window.testFirebaseQuery = function(){
     var resultDiv = byId("queryResult");
@@ -1495,6 +1374,85 @@
       resultDiv.innerHTML = html;
     });
   };
+
+  // === SIMPLE TEST FUNCTION ===
+  // Paste this in browser console (F12): runSimpleTest()
+  window.runSimpleTest = function(){
+    console.clear();
+    console.log("🧪 SIMPLE TEST STARTING...");
+    console.log("Time:", new Date().toLocaleString());
+    
+    // Test 1: Firebase App
+    console.log("\n[Test 1] Firebase App");
+    if(firebase.app()){
+      console.log("✅ Firebase app initialized");
+    } else {
+      console.error("❌ Firebase app NOT initialized");
+      return;
+    }
+    
+    // Test 2: Firestore
+    console.log("\n[Test 2] Firestore");
+    if(db){
+      console.log("✅ Firestore connected");
+    } else {
+      console.error("❌ Firestore NOT connected");
+      return;
+    }
+    
+    // Test 3: Simple query (just count)
+    console.log("\n[Test 3] Firestore Query (30 second timeout)");
+    console.log("Querying users collection...");
+    
+    var testTimeout = setTimeout(function(){
+      console.error("❌ TIMEOUT - Query didn't respond in 30 seconds");
+      console.error("   Likely: Firestore blocked by Security Rules");
+    }, 30000);
+    
+    db.collection("users").limit(1).get()
+      .then(function(snap){
+        clearTimeout(testTimeout);
+        console.log("✅ Query succeeded!");
+        console.log("   Documents found:", snap.size);
+        
+        if(snap.size === 0){
+          console.warn("⚠️  No documents in users collection");
+        } else {
+          console.log("   First document:");
+          var doc = snap.docs[0];
+          console.log("     ID:", doc.id);
+          console.log("     Data:", doc.data());
+        }
+        
+        console.log("\n✅ TEST COMPLETE - Everything works!");
+        console.log("   Admin panel should load data now.");
+        console.log("   If still no data, click Load All Users.");
+        
+        // Auto-load all users if query succeeded
+        console.log("\n🟡 Auto-loading all users...");
+        setTimeout(function(){ load(); }, 1000);
+      })
+      ['catch'](function(err){
+        clearTimeout(testTimeout);
+        console.error("❌ Query failed!");
+        console.error("   Error Code:", err.code);
+        console.error("   Message:", err.message);
+        
+        if(err.code === 'permission-denied'){
+          console.error("\n⚠️  FIRESTORE SECURITY RULES ISSUE");
+          console.error("   Go to Firebase Console:");
+          console.error("   1. dhms-admission-master project");
+          console.error("   2. Firestore > Rules");
+          console.error("   3. Replace with:");
+          console.error("   allow read, write: if true;");
+        }
+      });
+  };
+  
+  console.log("\n📋 TO DEBUG:");
+  console.log("   Open browser console (F12)");
+  console.log("   Run: runSimpleTest()");
+  console.log("\n");
 </script>
 </body>
 </html>
