@@ -1453,6 +1453,24 @@
   console.log("   Open browser console (F12)");
   console.log("   Run: runSimpleTest()");
   console.log("\n");
+
+  // TEST DATA - Fallback if Firestore doesn't work
+  window.testData = [
+    {_id: "1", name: "যে রহমান উদ্দিন", mobile: "01234567890", totalSeconds: 162000, sessions: 45, totalAttempted: 250, totalCorrect: 150, blocked: false, hasBookPurchase: true, time: new Date().toISOString()},
+    {_id: "2", name: "MD ATIKAR RAHMAN", mobile: "01345678901", totalSeconds: 1800, sessions: 1, totalAttempted: 48, totalCorrect: 25, blocked: false, hasBookPurchase: false, time: new Date().toISOString()},
+    {_id: "3", name: "মোক্তার আহমেদ", mobile: "01456789012", totalSeconds: 13500, sessions: 5, totalAttempted: 150, totalCorrect: 111, blocked: false, hasBookPurchase: true, time: new Date().toISOString()},
+    {_id: "4", name: "ফারহানা অনিক", mobile: "01567890123", totalSeconds: 5400, sessions: 2, totalAttempted: 80, totalCorrect: 42, blocked: false, hasBookPurchase: false, time: new Date().toISOString()},
+    {_id: "5", name: "রহিম সাহেব", mobile: "01678901234", totalSeconds: 216000, sessions: 60, totalAttempted: 500, totalCorrect: 400, blocked: false, hasBookPurchase: true, time: new Date().toISOString()}
+  ];
+  
+  // Load test data if Firestore fails
+  window.loadTestData = function(){
+    console.log("⚠️  Loading TEST DATA instead of Firestore");
+    allUsers = window.testData;
+    renderStats(allUsers);
+    renderTable();
+    console.log("✅ Test data loaded:", allUsers.length, "users");
+  };
 </script>
 </body>
 </html>
