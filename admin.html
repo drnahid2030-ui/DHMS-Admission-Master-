@@ -278,13 +278,19 @@
       blockedBox.addEventListener("click", function(e){
         e.preventDefault();
         e.stopPropagation();
+        console.log("Blocked box clicked, showing blocked users...");
         showBlockedUsers();
       });
+    } else {
+      console.log("Error: blockedStatBox not found");
     }
   }
 
   function showBlockedUsers(){
+    console.log("showBlockedUsers called. allUsers:", allUsers);
     var blockedUsers = allUsers.filter(function(u){ return u.blocked === true; });
+    console.log("Filtered blocked users:", blockedUsers);
+    
     if(blockedUsers.length === 0){
       alert("কোনো ব্লক করা ব্যবহারকারী নেই।");
       return;
@@ -297,7 +303,11 @@
       var active = (Date.now() - user.lastTick) < 30000 ? '●' : '○';
       var bookPurchased = user.hasBookPurchase ? '✅ হ্যাঁ' : '❌ না';
       html += '<tr>';
-      html += '<td>'+escapeHtml(user.name)+'</td>';
+        var nameDisplay = escapeHtml(user.name);
+        if(user.hasBookPurchase){
+          nameDisplay = '⭐ ' + nameDisplay;
+        }
+        html += '<td style="font-weight:'+(user.hasBookPurchase?'700':'400')+';color:'+(user.hasBookPurchase?'var(--teal)':'inherit')+';">'+nameDisplay+'</td>';
       html += '<td>'+escapeHtml(user.mobile)+'</td>';
       html += '<td><button class="btn-sm book-toggle-btn" data-name="'+escapeHtml(user.name)+'" data-status="'+(user.hasBookPurchase?1:0)+'">'+bookPurchased+'</button></td>';
       html += '<td style="text-align:center;font-size:18px;color:'+(active==='●'?'var(--teal)':'#ccc')+';">'+active+'</td>';
@@ -306,9 +316,24 @@
     });
     
     html += '</table>';
-    html += '<div style="margin-top:20px;"><button class="btn-secondary" onclick="loadUsers()">← ফিরে যান</button></div>';
+    html += '<div style="margin-top:20px;"><button class="btn-secondary" onclick="load()">← ফিরে যান</button></div>';
     
-    byId("userTable").innerHTML = html;
+    var userTableEl = byId("tableHolder");
+    if(!userTableEl){
+      console.log("userTable element not found, creating it");
+      var container = byId("userContainer") || byId("mainContent");
+      if(container){
+        userTableEl = document.createElement("div");
+        userTableEl.id = "userTable";
+        container.innerHTML = "";
+        container.appendChild(userTableEl);
+      }
+    }
+    if(userTableEl){
+      userTableEl.innerHTML = html;
+    } else {
+      console.error("Could not find or create userTable element");
+    }
     
     document.querySelectorAll(".book-toggle-btn").forEach(function(btn){
       btn.addEventListener("click", function(e){
@@ -332,7 +357,7 @@
         var name = btn.getAttribute("data-name");
         var toBlock = parseInt(btn.getAttribute("data-block")) === 1;
         db.collection("users").doc(name).set({blocked: toBlock}, {merge:true}).then(function(){
-          loadUsers();
+          load();
         })['catch'](function(err){ alert("ব্যর্থ: "+err.message); });
       });
     });
@@ -343,7 +368,7 @@
         var name = btn.getAttribute("data-name");
         if(!confirm("ব্যবহারকারী মুছবেন? এটা আনডু করা যাবে না।")) return;
         db.collection("users").doc(name)['delete']().then(function(){
-          loadUsers();
+          load();
         })['catch'](function(err){ alert("ব্যর্থ: "+err.message); });
       });
     });
@@ -428,6 +453,11 @@
     });
   }
 
+  function loadUsers(){
+    load(); // Wrapper for compatibility
+  }
+
+
   function load(){
     byId("tableHolder").innerHTML = '<div class="loading">লোড হচ্ছে...</div>';
     db.collection("users").get().then(function(snap){
@@ -440,6 +470,8 @@
       allUsers = users;
       renderStats(users);
       renderTable();
+      // Refresh table every time users are loaded
+      console.log("Users loaded:", users.length);
     })['catch'](function(err){
       byId("tableHolder").innerHTML = '<div class="empty">ডেটা লোড করা যায়নি।<br>'+escapeHtml(err.message)+'</div>';
     });
