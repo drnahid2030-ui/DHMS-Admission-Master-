@@ -180,11 +180,16 @@ function renderStats() {
   const total = allUsers.length;
   const blocked = allUsers.filter(u => u.blocked).length;
   const bookBuyers = allUsers.filter(u => u.hasBookPurchase).length;
+  const activeNow = allUsers.filter(u => isUserActive(u)).length;
   
   document.getElementById('stats').innerHTML = `
     <div class="stat">
       <div class="stat-value">${total}</div>
       <div class="stat-label">মোট ব্যবহারকারী</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value" style="color: #10B981;">🟢 ${activeNow}</div>
+      <div class="stat-label">এখন সক্রিয়</div>
     </div>
     <div class="stat">
       <div class="stat-value">${bookBuyers}</div>
@@ -199,11 +204,22 @@ function renderStats() {
 
 // Check if user is active (last seen within 5 minutes)
 function isUserActive(user) {
-  if (!user.time) return false;
-  const lastSeen = new Date(user.time);
+  let lastSeenTime = null;
+  
+  // Check multiple possible field names
+  if (user.lastSeen) {
+    lastSeenTime = user.lastSeen.toDate ? user.lastSeen.toDate() : new Date(user.lastSeen);
+  } else if (user.time) {
+    lastSeenTime = user.time instanceof Date ? user.time : new Date(user.time);
+  } else if (user.completedAt) {
+    lastSeenTime = user.completedAt instanceof Date ? user.completedAt : new Date(user.completedAt);
+  }
+  
+  if (!lastSeenTime) return false;
+  
   const now = new Date();
-  const minutesAgo = (now - lastSeen) / (1000 * 60);
-  return minutesAgo < 5;
+  const minutesAgo = (now - lastSeenTime) / (1000 * 60);
+  return minutesAgo < 5; // Active if within last 5 minutes
 }
 
 // Render table
@@ -211,7 +227,14 @@ function renderTable() {
   const tbody = document.getElementById('tbody');
   tbody.innerHTML = '';
   
-  allUsers.forEach(user => {
+  // Sort: active users first
+  const sortedUsers = [...allUsers].sort((a, b) => {
+    const aActive = isUserActive(a) ? 1 : 0;
+    const bActive = isUserActive(b) ? 1 : 0;
+    return bActive - aActive; // Active first
+  });
+  
+  sortedUsers.forEach(user => {
     const hours = Math.floor((user.totalSeconds || 0) / 3600);
     const rate = user.totalAttempted ? Math.round((user.totalCorrect || 0) * 100 / user.totalAttempted) : 0;
     const active = isUserActive(user);
