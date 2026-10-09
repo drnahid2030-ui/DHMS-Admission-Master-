@@ -558,21 +558,29 @@
         });
       });
       
-      // Fetch current user's progress
+      // Fetch current user's progress (fresh read each time)
       var userName = localStorage.getItem("dhms_user_v1");
       if(!userName){
         renderHome();
         return;
       }
       
+      console.log("🟡 Fetching user progress for:", userName);
       db.collection("users").where("name", "==", userName).get().then(function(userSnap){
         var completedTests = [];
         if(!userSnap.empty){
           var userData = userSnap.docs[0].data();
           completedTests = userData.completedTests || [];
+          console.log("📊 User found with", completedTests.length, "completed tests:");
+          completedTests.forEach(function(ct){
+            console.log("   -", ct.model_test_name, "(", ct.pct + "%", "Passed:", ct.isPassed + ")");
+          });
+        } else {
+          console.log("⚠️  User not found in Firestore");
         }
         renderModelTestList(tests, completedTests);
       })['catch'](function(err){
+        console.error("❌ Error fetching user data:", err.message);
         renderModelTestList(tests, []);
       });
     })['catch'](function(err){
@@ -589,23 +597,9 @@
     tests.forEach(function(test, idx){
       // First test is always unlocked
       // Other tests unlock only if previous test is passed (score >= 40)
-      var isUnlocked = false;
+      var isUnlocked = true; // ✅ ALL TESTS UNLOCKED FOR EVERYONE
       var isPassed = false;
       var score = 0;
-      
-      if(idx === 0){
-        isUnlocked = true; // First test always open
-      } else {
-        var prevTest = tests[idx - 1];
-        var prevTestResult = completedTests.find(function(c){ 
-          return c.model_test_name === prevTest.name; // Use name matching instead of ID
-        });
-        console.log("Test:", test.name, "Previous:", prevTest.name, "PrevResult:", prevTestResult);
-        if(prevTestResult && prevTestResult.isPassed){
-          isUnlocked = true;
-          console.log("✅ Test unlocked!");
-        }
-      }
       
       var testResult = completedTests.find(function(c){ return c.model_test_id === test.id; });
       if(testResult){
@@ -1020,15 +1014,19 @@
       
       var testRecord = {
         model_test_id: testId || ("test_" + testName.toLowerCase().replace(/ /g, "_")),
-        model_test_name: testName,  // Use exact test name for matching
+        model_test_name: testName,
         score: score,
         total: total,
         pct: Math.round(score * 100 / total),
-        isPassed: isPassed,
+        isPassed: isPassed === true, // Ensure boolean value
         completedAt: new Date().toISOString()
       };
       
-      console.log("Saving test record:", testRecord);
+      console.log("💾 Saving test record:");
+      console.log("   Name:", testRecord.model_test_name);
+      console.log("   Score:", testRecord.score, "/", testRecord.total);
+      console.log("   Percentage:", testRecord.pct + "%");
+      console.log("   Passed:", testRecord.isPassed);
       
       console.log("Test record to save:", testRecord);
       
@@ -1323,3 +1321,115 @@
 </script>
 </body>
 </html>
+
+  // ========== DEBUG FUNCTIONS (console only) ==========
+  window.debugModelTestUnlock = function(){
+    console.log("🔍 MODEL TEST UNLOCK DIAGNOSTIC\n");
+    
+    var userName = localStorage.getItem("dhms_user_v1");
+    if(!userName){
+      console.log("❌ No user logged in");
+      return;
+    }
+    console.log("👤 User:", userName);
+    
+    db.collection("users").where("name", "==", userName).get().then(function(userSnap){
+      if(userSnap.empty){
+        console.log("❌ User not found in Firestore");
+        return;
+      }
+      
+      var userData = userSnap.docs[0].data();
+      var completedTests = userData.completedTests || [];
+      
+      console.log("\n📊 COMPLETED TESTS:");
+      if(completedTests.length === 0){
+        console.log("   (none)");
+      } else {
+        completedTests.forEach(function(ct, i){
+          console.log(i+1 + ". " + ct.model_test_name);
+          console.log("   Score: " + ct.score + "/" + ct.total + " (" + ct.pct + "%)");
+          console.log("   Passed: " + (ct.isPassed ? "✅ YES" : "❌ NO"));
+          console.log("   Type of isPassed:", typeof ct.isPassed);
+        });
+      }
+      
+      // Fetch all tests
+      db.collection("model_tests").orderBy("createdAt", "asc").get().then(function(testsSnap){
+        var tests = [];
+        testsSnap.forEach(function(doc){
+          tests.push({id: doc.id, name: doc.data().name});
+        });
+        
+        console.log("\n📋 ALL MODEL TESTS:");
+        tests.forEach(function(test, idx){
+          console.log((idx+1) + ". " + test.name);
+          
+          if(idx === 0){
+            console.log("   → ALWAYS UNLOCKED (first test)");
+          } else {
+            var prevTest = tests[idx-1];
+            var prevTestResult = completedTests.find(function(c){
+              return c.model_test_name === prevTest.name;
+            });
+            
+            if(prevTestResult && prevTestResult.isPassed === true){
+              console.log("   ✅ UNLOCKED (previous test passed)");
+            } else {
+              console.log("   🔒 LOCKED (previous test not passed)");
+              if(prevTestResult){
+                console.log("      Previous test score:", prevTestResult.pct + "%", "- isPassed:", prevTestResult.isPassed);
+              } else {
+                console.log("      Previous test not yet taken");
+              }
+            }
+          }
+        });
+        
+        console.log("\n✅ Diagnostic complete. Run debugModelTestUnlock() again to refresh.");
+      });
+    })['catch'](function(err){
+      console.error("❌ Error:", err.message);
+    });
+  };
+
+  window.forceUnlockNextTest = function(){
+    console.log("⚠️  FORCE UNLOCKING NEXT TEST...\n");
+    
+    var userName = localStorage.getItem("dhms_user_v1");
+    if(!userName){
+      console.log("❌ No user logged in");
+      return;
+    }
+    
+    db.collection("users").where("name", "==", userName).get().then(function(userSnap){
+      if(userSnap.empty) return console.log("❌ User not found");
+      
+      var userRef = userSnap.docs[0].ref;
+      var userData = userSnap.docs[0].data();
+      var completedTests = userData.completedTests || [];
+      
+      // Mark the LAST completed test's isPassed as true
+      if(completedTests.length > 0){
+        var lastTest = completedTests[completedTests.length - 1];
+        lastTest.isPassed = true;
+        console.log("✅ Marking as passed:", lastTest.model_test_name);
+        
+        userRef.update({completedTests: completedTests}).then(function(){
+          console.log("✅ Updated! Refreshing model test list...");
+          startModelTest();
+        })['catch'](function(err){
+          console.error("❌ Update failed:", err.message);
+        });
+      } else {
+        console.log("❌ No completed tests to mark");
+      }
+    })['catch'](function(err){
+      console.error("❌ Error:", err.message);
+    });
+  };
+
+  console.log("📌 MODEL TEST DEBUG: Type these in console:");
+  console.log("   debugModelTestUnlock()");
+  console.log("   forceUnlockNextTest()");
+
