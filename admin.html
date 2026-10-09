@@ -89,7 +89,9 @@
 
   <!-- TAB: MODEL TESTS -->
   <div id="model-tests" class="tab-content">
-    <h2>মডেল টেস্ট ম্যানেজমেন্ট (শীঘ্রই আসছে)</h2>
+    <h2>🎯 মডেল টেস্ট ম্যানেজমেন্ট</h2>
+    <button class="btn" style="margin-bottom: 20px;" onclick="showCreateTestForm()">+ নতুন মডেল টেস্ট</button>
+    <div id="modelTestsContainer" style="margin-top: 20px;"></div>
   </div>
 </div>
 
@@ -288,8 +290,173 @@ function loadTestData() {
   showSuccess('টেস্ট ডেটা লোড হয়েছে');
 }
 
+// ============ MODEL TESTS FUNCTIONS ============
+
+async function loadModelTests() {
+  console.log("📋 Loading model tests...");
+  try {
+    const snapshot = await db.collection('model_tests').orderBy('createdAt', 'asc').get();
+    
+    let html = '';
+    
+    if (snapshot.empty) {
+      document.getElementById('modelTestsContainer').innerHTML = '<p>কোনো মডেল টেস্ট নেই</p>';
+      return;
+    }
+
+    for (const doc of snapshot.docs) {
+      const test = doc.data();
+      const testId = doc.id;
+      
+      // Count questions in each category
+      const qSnap = await db.collection('model_test_questions')
+        .where('model_test_id', '==', testId)
+        .get();
+      
+      const questionCount = qSnap.size;
+      
+      html += `
+        <div class="model-test-item" style="background: white; padding: 20px; margin-bottom: 15px; border-radius: 5px; border-left: 4px solid #0F766E;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <h3 style="margin-bottom: 5px;">📝 ${test.name}</h3>
+              <p style="color: #666; font-size: 12px;">মোট প্রশ্ন: <strong>${questionCount}</strong></p>
+            </div>
+            <div>
+              <button class="btn" style="padding: 5px 15px; font-size: 12px; margin-right: 5px;" onclick="viewTestQuestions('${testId}', '${test.name}')">দেখুন</button>
+              <button class="btn danger" style="padding: 5px 15px; font-size: 12px;" onclick="deleteTest('${testId}', '${test.name}')">ডিলিট</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+    
+    document.getElementById('modelTestsContainer').innerHTML = html;
+  } catch (err) {
+    console.error("❌ Error:", err);
+    showError('মডেল টেস্ট লোড ব্যর্থ: ' + err.message);
+  }
+}
+
+async function viewTestQuestions(testId, testName) {
+  console.log("📝 Viewing questions for:", testName);
+  
+  try {
+    const snapshot = await db.collection('model_test_questions')
+      .where('model_test_id', '==', testId)
+      .orderBy('createdAt', 'asc')
+      .get();
+    
+    let html = `
+      <div style="background: white; padding: 20px; border-radius: 5px; margin-top: 20px;">
+        <h3 style="margin-bottom: 20px;">📋 ${testName} - প্রশ্ন সমূহ (${snapshot.size}টি)</h3>
+        <button class="btn" onclick="document.getElementById('modelTestsContainer').innerHTML=''; loadModelTests();" style="margin-bottom: 15px;">← পিছনে যান</button>
+        <table style="width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr style="background: #f0f0f0;">
+              <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">ক্যাটাগরি</th>
+              <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">প্রশ্ন</th>
+              <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">সঠিক উত্তর</th>
+              <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">অ্যাকশন</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+    
+    snapshot.forEach(doc => {
+      const q = doc.data();
+      html += `
+        <tr style="border-bottom: 1px solid #ddd;">
+          <td style="padding: 10px; border: 1px solid #ddd;">${q.category || 'N/A'}</td>
+          <td style="padding: 10px; border: 1px solid #ddd;">${q.q.substring(0, 50)}...</td>
+          <td style="padding: 10px; border: 1px solid #ddd;">${q.answer}</td>
+          <td style="padding: 10px; border: 1px solid #ddd;">
+            <button class="btn danger" style="padding: 3px 10px; font-size: 11px;" onclick="deleteQuestion('${doc.id}', '${testId}')">ডিলিট</button>
+          </td>
+        </tr>
+      `;
+    });
+    
+    html += `</tbody></table></div>`;
+    document.getElementById('modelTestsContainer').innerHTML = html;
+  } catch (err) {
+    showError('প্রশ্ন লোড ব্যর্থ: ' + err.message);
+  }
+}
+
+async function deleteTest(testId, testName) {
+  if (!confirm(`${testName} মডেল টেস্ট ডিলিট করবেন? এর সব প্রশ্নও ডিলিট হবে।`)) return;
+  
+  try {
+    // Delete test document
+    await db.collection('model_tests').doc(testId).delete();
+    
+    // Delete all questions in this test
+    const qSnap = await db.collection('model_test_questions')
+      .where('model_test_id', '==', testId)
+      .get();
+    
+    for (const doc of qSnap.docs) {
+      await doc.ref.delete();
+    }
+    
+    showSuccess('মডেল টেস্ট ডিলিট হয়েছে');
+    loadModelTests();
+  } catch (err) {
+    showError('ডিলিট ব্যর্থ: ' + err.message);
+  }
+}
+
+async function deleteQuestion(questionId, testId) {
+  if (!confirm('প্রশ্ন ডিলিট করবেন?')) return;
+  
+  try {
+    await db.collection('model_test_questions').doc(questionId).delete();
+    showSuccess('প্রশ্ন ডিলিট হয়েছে');
+    // Reload the test questions
+    const testSnap = await db.collection('model_tests').doc(testId).get();
+    if (testSnap.exists) {
+      viewTestQuestions(testId, testSnap.data().name);
+    }
+  } catch (err) {
+    showError('ডিলিট ব্যর্থ: ' + err.message);
+  }
+}
+
+function showCreateTestForm() {
+  const testName = prompt('নতুন মডেল টেস্টের নাম দিন (যেমন: Model Test 01):');
+  if (!testName) return;
+  
+  createNewTest(testName);
+}
+
+async function createNewTest(testName) {
+  try {
+    await db.collection('model_tests').add({
+      name: testName,
+      createdAt: new Date()
+    });
+    showSuccess('নতুন মডেল টেস্ট তৈরি হয়েছে');
+    loadModelTests();
+  } catch (err) {
+    showError('টেস্ট তৈরি ব্যর্থ: ' + err.message);
+  }
+}
+
+// Override switchTab to load model tests when switching to that tab
+const originalSwitchTab = window.switchTab;
+window.switchTab = function(tab) {
+  originalSwitchTab(tab);
+  if (tab === 'model-tests') {
+    loadModelTests();
+  }
+};
+
 // Load on start
-window.addEventListener('load', loadUsers);
+window.addEventListener('load', function() {
+  loadUsers();
+  loadModelTests();
+});
 </script>
 
 </body>
