@@ -197,6 +197,15 @@ function renderStats() {
   `;
 }
 
+// Check if user is active (last seen within 5 minutes)
+function isUserActive(user) {
+  if (!user.time) return false;
+  const lastSeen = new Date(user.time);
+  const now = new Date();
+  const minutesAgo = (now - lastSeen) / (1000 * 60);
+  return minutesAgo < 5;
+}
+
 // Render table
 function renderTable() {
   const tbody = document.getElementById('tbody');
@@ -205,10 +214,12 @@ function renderTable() {
   allUsers.forEach(user => {
     const hours = Math.floor((user.totalSeconds || 0) / 3600);
     const rate = user.totalAttempted ? Math.round((user.totalCorrect || 0) * 100 / user.totalAttempted) : 0;
+    const active = isUserActive(user);
+    const activeIndicator = active ? '🟢' : '⚪';
     
     tbody.innerHTML += `
-      <tr>
-        <td>${user.name || 'N/A'} ${user.hasBookPurchase ? '⭐' : ''}</td>
+      <tr style="${active ? 'background: #f0fdf4;' : ''}">
+        <td>${activeIndicator} ${user.name || 'N/A'} ${user.hasBookPurchase ? '⭐' : ''}</td>
         <td>${user.mobile || 'N/A'}</td>
         <td>${user.sessions || 0}</td>
         <td>${hours}</td>
