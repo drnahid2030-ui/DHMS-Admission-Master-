@@ -3,126 +3,100 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>অ্যাডমিন প্যানেল - DHMS এডমিশন মাস্টার</title>
+  <title>Admin - DHMS Admission Master</title>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f6f8; color: #333; }
+    body { font-family: Arial, sans-serif; background: #f0f2f5; color: #333; }
     .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
-    .topbar { background: linear-gradient(135deg, #0F766E 0%, #0A5450 100%); color: white; padding: 20px; margin: -20px -20px 20px -20px; text-align: center; }
-    .topbar h1 { font-size: 24px; margin-bottom: 5px; }
+    header { background: linear-gradient(135deg, #0F766E, #0A5450); color: white; padding: 30px; margin: -20px -20px 30px -20px; text-align: center; }
+    header h1 { font-size: 28px; margin-bottom: 5px; }
     .toolbar { margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; }
-    .btn { padding: 10px 20px; background: #0F766E; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; }
+    .btn { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; background: #0F766E; color: white; }
     .btn:hover { background: #0A5450; }
-    .btn.secondary { background: #D97706; }
-    .btn.secondary:hover { background: #B45309; }
-    .tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #ddd; }
-    .tab-btn { padding: 10px 20px; background: none; border: none; cursor: pointer; font-size: 16px; color: #666; border-bottom: 3px solid transparent; }
+    .btn.danger { background: #DC2626; }
+    .btn.success { background: #10B981; }
+    .tabs { display: flex; gap: 0; margin-bottom: 20px; border-bottom: 2px solid #ddd; }
+    .tab-btn { padding: 12px 20px; background: none; border: none; cursor: pointer; font-size: 15px; color: #666; border-bottom: 3px solid transparent; }
     .tab-btn.active { color: #0F766E; border-bottom-color: #0F766E; }
     .tab-content { display: none; }
     .tab-content.active { display: block; }
-    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
-    .stat-box { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-    .stat-box h3 { font-size: 12px; color: #666; margin-bottom: 5px; }
-    .stat-box .number { font-size: 32px; font-weight: bold; color: #0F766E; }
-    table { width: 100%; border-collapse: collapse; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-    th { background: #0F766E; color: white; padding: 12px; text-align: left; font-size: 13px; }
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px; }
+    .stat { background: white; padding: 15px; border-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); text-align: center; }
+    .stat-value { font-size: 28px; font-weight: bold; color: #0F766E; }
+    .stat-label { font-size: 12px; color: #666; margin-top: 5px; }
+    .search-box { margin-bottom: 20px; }
+    .search-box input { width: 100%; padding: 12px; font-size: 14px; border: 1px solid #ddd; border-radius: 5px; }
+    table { width: 100%; border-collapse: collapse; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    th { background: #0F766E; color: white; padding: 12px; text-align: left; font-size: 13px; font-weight: 600; }
     td { padding: 12px; border-bottom: 1px solid #eee; font-size: 13px; }
     tr:hover { background: #f9f9f9; }
-    .search-box { margin-bottom: 20px; }
-    .search-box input { width: 100%; padding: 10px; font-size: 14px; border: 1px solid #ddd; border-radius: 6px; }
-    .model-test-item { background: white; padding: 15px; margin-bottom: 10px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-    .model-test-item h3 { margin-bottom: 10px; }
-    .category-progress { margin-bottom: 15px; }
-    .category-progress label { font-size: 12px; color: #666; display: block; margin-bottom: 5px; }
-    .progress-bar { height: 20px; background: #eee; border-radius: 4px; overflow: hidden; }
-    .progress-fill { height: 100%; background: #0F766E; }
-    input, textarea, select { padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-family: inherit; }
-    .form-group { margin-bottom: 15px; }
-    .form-group label { display: block; margin-bottom: 5px; font-weight: 500; }
+    .action-btn { padding: 5px 10px; margin: 2px; font-size: 11px; }
+    .loading { text-align: center; padding: 40px; color: #666; }
+    .error { background: #FEE2E2; color: #991B1B; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+    .success { background: #DCFCE7; color: #166534; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
   </style>
 </head>
 <body>
+
 <div class="container">
-  <div class="topbar">
+  <header>
     <h1>👥 অ্যাডমিন প্যানেল</h1>
     <p>DHMS এডমিশন মাস্টার</p>
-  </div>
+  </header>
 
   <div class="toolbar">
-    <button class="btn" id="refreshBtn">🔄 রিফ্রেশ</button>
-    <button class="btn" id="testDataBtn">📊 টেস্ট ডেটা লোড করুন</button>
+    <button class="btn" onclick="loadUsers()">🔄 রিফ্রেশ</button>
+    <button class="btn success" onclick="loadTestData()">📊 টেস্ট ডেটা</button>
   </div>
+
+  <div id="error" class="error" style="display:none;"></div>
+  <div id="success" class="success" style="display:none;"></div>
 
   <div class="tabs">
-    <button class="tab-btn active" data-tab="users">👥 ব্যবহারকারী</button>
-    <button class="tab-btn" data-tab="questions">➕ প্রশ্ন যোগ করুন</button>
-    <button class="tab-btn" data-tab="model-tests">🎯 মডেল টেস্ট</button>
+    <button class="tab-btn active" onclick="switchTab('users')">👥 ব্যবহারকারী</button>
+    <button class="tab-btn" onclick="switchTab('questions')">➕ প্রশ্ন</button>
+    <button class="tab-btn" onclick="switchTab('model-tests')">🎯 মডেল টেস্ট</button>
   </div>
 
-  <!-- TAB 1: USERS -->
+  <!-- TAB: USERS -->
   <div id="users" class="tab-content active">
-    <div class="stats" id="statsContainer"></div>
+    <div class="stats" id="stats"></div>
     <div class="search-box">
-      <input type="text" id="searchInput" placeholder="নাম বা মোবাইল দিয়ে খুঁজুন...">
+      <input type="text" id="search" placeholder="নাম বা মোবাইল দিয়ে খুঁজুন..." onkeyup="filterTable()">
     </div>
-    <table id="usersTable">
+    <div id="loading" class="loading">লোড হচ্ছে...</div>
+    <table id="userTable" style="display:none;">
       <thead>
         <tr>
           <th>নাম</th>
           <th>মোবাইল</th>
+          <th>সেশন</th>
+          <th>সময় (ঘন্টা)</th>
+          <th>সঠিক হার</th>
           <th>বই কিনেছে</th>
           <th>স্ট্যাটাস</th>
-          <th>মোট সময়</th>
-          <th>সেশন</th>
-          <th>সঠিক হার</th>
           <th>অ্যাকশন</th>
         </tr>
       </thead>
-      <tbody id="usersTableBody"></tbody>
+      <tbody id="tbody"></tbody>
     </table>
   </div>
 
-  <!-- TAB 2: QUESTIONS -->
+  <!-- TAB: QUESTIONS -->
   <div id="questions" class="tab-content">
-    <h2>নতুন প্রশ্ন যোগ করুন</h2>
-    <div class="form-group">
-      <label>বিষয়:</label>
-      <select id="subjectSelect">
-        <option value="বাংলা">বাংলা</option>
-        <option value="English">English</option>
-        <option value="গণিত">গণিত</option>
-        <option value="বিজ্ঞান">বিজ্ঞান</option>
-        <option value="সাধারণ জ্ঞান">সাধারণ জ্ঞান</option>
-      </select>
-    </div>
-    <div class="form-group">
-      <label>প্রশ্ন:</label>
-      <textarea id="questionText" placeholder="প্রশ্ন লিখুন..."></textarea>
-    </div>
-    <div class="form-group">
-      <label>সঠিক উত্তর:</label>
-      <select id="answerSelect">
-        <option value="A">A</option>
-        <option value="B">B</option>
-        <option value="C">C</option>
-        <option value="D">D</option>
-      </select>
-    </div>
-    <button class="btn" id="saveQuestionBtn">প্রশ্ন সেভ করুন</button>
+    <h2>নতুন প্রশ্ন যোগ করুন (শীঘ্রই আসছে)</h2>
   </div>
 
-  <!-- TAB 3: MODEL TESTS -->
+  <!-- TAB: MODEL TESTS -->
   <div id="model-tests" class="tab-content">
-    <h2>মডেল টেস্ট ম্যানেজমেন্ট</h2>
-    <button class="btn" id="createTestBtn">+ নতুন মডেল টেস্ট</button>
-    <div id="modelTestsContainer" style="margin-top: 20px;"></div>
+    <h2>মডেল টেস্ট ম্যানেজমেন্ট (শীঘ্রই আসছে)</h2>
   </div>
 </div>
 
 <script>
-// Firebase Configuration
+// Firebase Config
 const firebaseConfig = {
   apiKey: "AIzaSyAzZOSUuK_TgliOClY1qTh2xtg8ayFxRPM",
   authDomain: "dhms-admission-master.firebaseapp.com",
@@ -136,166 +110,182 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 let allUsers = [];
-let searchTerm = "";
 
-// Helper functions
-function byId(id) { return document.getElementById(id); }
+// Show error
+function showError(msg) {
+  const el = document.getElementById('error');
+  el.textContent = '❌ ' + msg;
+  el.style.display = 'block';
+  console.error(msg);
+}
 
-// Tab switching
-document.querySelectorAll(".tab-btn").forEach(btn => {
-  btn.addEventListener("click", function() {
-    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
-    document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
-    this.classList.add("active");
-    byId(this.dataset.tab).classList.add("active");
-  });
-});
+// Show success
+function showSuccess(msg) {
+  const el = document.getElementById('success');
+  el.textContent = '✅ ' + msg;
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 3000);
+}
 
-// Load users
-async function load() {
-  console.log("📋 Loading users from Firestore...");
+// Switch tabs
+function switchTab(tab) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById(tab).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// Load users from Firestore
+async function loadUsers() {
+  console.log("📋 Loading users...");
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('userTable').style.display = 'none';
+  
   try {
-    const snap = await db.collection("users").get();
-    allUsers = [];
-    snap.forEach(doc => {
-      allUsers.push({id: doc.id, ...doc.data()});
-    });
-    console.log("✅ Loaded:", allUsers.length, "users");
-    renderStats(allUsers);
-    renderTable();
-  } catch (err) {
-    console.error("❌ Error:", err.message);
-    if(err.code === "permission-denied") {
-      alert("Firebase Rules blocked! Contact admin.");
+    const snapshot = await db.collection('users').get();
+    
+    if (snapshot.empty) {
+      showError('কোনো ব্যবহারকারী পাওয়া যায়নি');
+      document.getElementById('loading').textContent = 'কোনো ডেটা নেই';
+      return;
     }
+
+    allUsers = [];
+    snapshot.forEach(doc => {
+      allUsers.push({ _id: doc.id, ...doc.data() });
+    });
+
+    console.log("✅ Loaded", allUsers.length, "users");
+    renderStats();
+    renderTable();
+    
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('userTable').style.display = 'table';
+  } catch (err) {
+    console.error("❌ Error:", err);
+    showError('Firebase সংযোগ ব্যর্থ: ' + err.message);
+    document.getElementById('loading').textContent = 'ত্রুটি: ' + err.message;
   }
 }
 
 // Render stats
-function renderStats(users) {
-  const stats = byId("statsContainer");
-  const totalUsers = users.length;
-  const activeToday = users.filter(u => {
-    const lastActive = new Date(u.time || 0);
-    const today = new Date();
-    return lastActive.toDateString() === today.toDateString();
-  }).length;
-  const blockedUsers = users.filter(u => u.blocked).length;
-
-  stats.innerHTML = `
-    <div class="stat-box">
-      <h3>মোট ব্যবহারকারী</h3>
-      <div class="number">${totalUsers}</div>
+function renderStats() {
+  const total = allUsers.length;
+  const blocked = allUsers.filter(u => u.blocked).length;
+  const bookBuyers = allUsers.filter(u => u.hasBookPurchase).length;
+  
+  document.getElementById('stats').innerHTML = `
+    <div class="stat">
+      <div class="stat-value">${total}</div>
+      <div class="stat-label">মোট ব্যবহারকারী</div>
     </div>
-    <div class="stat-box">
-      <h3>আজ সক্রিয়</h3>
-      <div class="number">${activeToday}</div>
+    <div class="stat">
+      <div class="stat-value">${bookBuyers}</div>
+      <div class="stat-label">বই ক্রেতা</div>
     </div>
-    <div class="stat-box">
-      <h3>ব্লক করা</h3>
-      <div class="number">${blockedUsers}</div>
+    <div class="stat">
+      <div class="stat-value">${blocked}</div>
+      <div class="stat-label">ব্লক করা</div>
     </div>
   `;
 }
 
 // Render table
 function renderTable() {
-  const tbody = byId("usersTableBody");
-  let filtered = allUsers;
+  const tbody = document.getElementById('tbody');
+  tbody.innerHTML = '';
   
-  if (searchTerm) {
-    filtered = allUsers.filter(u => 
-      (u.name || "").includes(searchTerm) || (u.mobile || "").includes(searchTerm)
-    );
-  }
-
-  tbody.innerHTML = filtered.map(u => {
-    const hours = Math.floor((u.totalSeconds || 0) / 3600);
-    const correctRate = u.totalAttempted ? Math.round((u.totalCorrect || 0) * 100 / u.totalAttempted) : 0;
-    return `
+  allUsers.forEach(user => {
+    const hours = Math.floor((user.totalSeconds || 0) / 3600);
+    const rate = user.totalAttempted ? Math.round((user.totalCorrect || 0) * 100 / user.totalAttempted) : 0;
+    
+    tbody.innerHTML += `
       <tr>
-        <td>${u.name || 'N/A'} ${u.hasBookPurchase ? '⭐' : ''}</td>
-        <td>${u.mobile || 'N/A'}</td>
+        <td>${user.name || 'N/A'} ${user.hasBookPurchase ? '⭐' : ''}</td>
+        <td>${user.mobile || 'N/A'}</td>
+        <td>${user.sessions || 0}</td>
+        <td>${hours}</td>
+        <td>${rate}%</td>
         <td>
-          <button class="btn" style="padding: 5px 10px; font-size: 12px;" onclick="toggleBookPurchase('${u.id}', ${!u.hasBookPurchase})">
-            ${u.hasBookPurchase ? '✅' : '❌'}
+          <button class="btn action-btn" onclick="toggleBook('${user._id}', ${!user.hasBookPurchase})">
+            ${user.hasBookPurchase ? '✅' : '❌'}
           </button>
         </td>
-        <td>${u.blocked ? '🔒 ব্লক' : '✅ সক্রিয়'}</td>
-        <td>${hours}h</td>
-        <td>${u.sessions || 0}</td>
-        <td>${correctRate}%</td>
+        <td>${user.blocked ? '🔒 ব্লক' : '✅'}</td>
         <td>
-          <button class="btn" style="padding: 5px 10px; font-size: 12px;" onclick="toggleBlock('${u.id}', ${!u.blocked})">
-            ${u.blocked ? 'আনব্লক' : 'ব্লক'}
+          <button class="btn action-btn" onclick="toggleBlock('${user._id}', ${!user.blocked})">
+            ${user.blocked ? 'আনব্লক' : 'ব্লক'}
           </button>
-          <button class="btn secondary" style="padding: 5px 10px; font-size: 12px; margin-left: 5px;" onclick="deleteUser('${u.id}')">
-            ডিলিট
-          </button>
+          <button class="btn danger action-btn" onclick="delUser('${user._id}')">ডিলিট</button>
         </td>
       </tr>
     `;
-  }).join("");
+  });
 }
 
-// Toggle block
-async function toggleBlock(userId, shouldBlock) {
-  try {
-    await db.collection("users").doc(userId).update({blocked: shouldBlock});
-    console.log(shouldBlock ? "✅ User blocked" : "✅ User unblocked");
-    load();
-  } catch (err) {
-    console.error("❌ Error:", err.message);
-  }
+// Filter table
+function filterTable() {
+  const term = document.getElementById('search').value.toLowerCase();
+  const rows = document.querySelectorAll('#tbody tr');
+  
+  rows.forEach(row => {
+    const text = row.textContent.toLowerCase();
+    row.style.display = text.includes(term) ? '' : 'none';
+  });
 }
 
 // Toggle book purchase
-async function toggleBookPurchase(userId, hasPurchase) {
+async function toggleBook(id, value) {
   try {
-    await db.collection("users").doc(userId).update({hasBookPurchase: hasPurchase});
-    console.log(hasPurchase ? "✅ Book purchase marked" : "✅ Book purchase removed");
-    load();
+    await db.collection('users').doc(id).update({ hasBookPurchase: value });
+    showSuccess(value ? 'বই ক্রেতা চিহ্নিত করা হয়েছে' : 'বই ক্রেতা অপসারণ করা হয়েছে');
+    loadUsers();
   } catch (err) {
-    console.error("❌ Error:", err.message);
+    showError('আপডেট ব্যর্থ: ' + err.message);
+  }
+}
+
+// Toggle block
+async function toggleBlock(id, value) {
+  try {
+    await db.collection('users').doc(id).update({ blocked: value });
+    showSuccess(value ? 'ব্যবহারকারী ব্লক করা হয়েছে' : 'ব্যবহারকারী আনব্লক করা হয়েছে');
+    loadUsers();
+  } catch (err) {
+    showError('আপডেট ব্যর্থ: ' + err.message);
   }
 }
 
 // Delete user
-async function deleteUser(userId) {
-  if(!confirm("নিশ্চিত? এটি ডিলিট হবে।")) return;
+async function delUser(id) {
+  if (!confirm('নিশ্চিত? এটি মুছে ফেলা হবে।')) return;
+  
   try {
-    await db.collection("users").doc(userId).delete();
-    console.log("✅ User deleted");
-    load();
+    await db.collection('users').doc(id).delete();
+    showSuccess('ব্যবহারকারী মুছে ফেলা হয়েছে');
+    loadUsers();
   } catch (err) {
-    console.error("❌ Error:", err.message);
+    showError('ডিলিট ব্যর্থ: ' + err.message);
   }
 }
 
-// Search
-byId("searchInput").addEventListener("input", function() {
-  searchTerm = this.value.trim();
-  renderTable();
-});
-
-// Refresh
-byId("refreshBtn").addEventListener("click", load);
-
-// Test data button
-byId("testDataBtn").addEventListener("click", function() {
-  console.log("📊 Loading test data...");
+// Load test data
+function loadTestData() {
   allUsers = [
-    {id: "1", name: "রহিম সাহেব", mobile: "01234567890", totalSeconds: 216000, sessions: 60, totalAttempted: 500, totalCorrect: 400, blocked: false, hasBookPurchase: true},
-    {id: "2", name: "ফারহানা অনিক", mobile: "01345678901", totalSeconds: 1800, sessions: 1, totalAttempted: 48, totalCorrect: 25, blocked: false, hasBookPurchase: false},
-    {id: "3", name: "মোক্তার আহমেদ", mobile: "01456789012", totalSeconds: 13500, sessions: 5, totalAttempted: 150, totalCorrect: 111, blocked: false, hasBookPurchase: true},
+    { _id: '1', name: 'রহিম সাহেব', mobile: '01234567890', sessions: 60, totalSeconds: 216000, totalAttempted: 500, totalCorrect: 400, hasBookPurchase: true, blocked: false },
+    { _id: '2', name: 'ফারহানা অনিক', mobile: '01345678901', sessions: 1, totalSeconds: 1800, totalAttempted: 48, totalCorrect: 25, hasBookPurchase: false, blocked: false },
+    { _id: '3', name: 'মোক্তার আহমেদ', mobile: '01456789012', sessions: 5, totalSeconds: 13500, totalAttempted: 150, totalCorrect: 111, hasBookPurchase: true, blocked: false },
   ];
-  renderStats(allUsers);
+  renderStats();
   renderTable();
-  alert("✅ টেস্ট ডেটা লোড হয়েছে");
-});
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('userTable').style.display = 'table';
+  showSuccess('টেস্ট ডেটা লোড হয়েছে');
+}
 
-// Initial load
-setTimeout(load, 500);
+// Load on start
+window.addEventListener('load', loadUsers);
 </script>
+
 </body>
 </html>
