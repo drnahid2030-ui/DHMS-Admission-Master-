@@ -295,20 +295,28 @@ function loadTestData() {
 async function loadModelTests() {
   console.log("📋 Loading model tests...");
   try {
-    const snapshot = await db.collection('model_tests').orderBy('createdAt', 'asc').get();
+    // Simple query - sorting done client-side
+    const snapshot = await db.collection('model_tests').get();
+    
+    // Sort by createdAt
+    const allDocs = snapshot.docs.sort((a, b) => {
+      const aTime = a.data().createdAt?.toMillis() || 0;
+      const bTime = b.data().createdAt?.toMillis() || 0;
+      return aTime - bTime;
+    });
     
     let html = '';
     
-    if (snapshot.empty) {
+    if (allDocs.length === 0) {
       document.getElementById('modelTestsContainer').innerHTML = '<p>কোনো মডেল টেস্ট নেই</p>';
       return;
     }
 
-    for (const doc of snapshot.docs) {
+    for (const doc of allDocs) {
       const test = doc.data();
       const testId = doc.id;
       
-      // Count questions in each category
+      // Count questions - simple query
       const qSnap = await db.collection('model_test_questions')
         .where('model_test_id', '==', testId)
         .get();
@@ -342,14 +350,21 @@ async function viewTestQuestions(testId, testName) {
   console.log("📝 Viewing questions for:", testName);
   
   try {
+    // Simple query - filtering done client-side
     const snapshot = await db.collection('model_test_questions')
       .where('model_test_id', '==', testId)
-      .orderBy('createdAt', 'asc')
       .get();
+    
+    // Sort client-side
+    const docs = snapshot.docs.sort((a, b) => {
+      const aTime = a.data().createdAt?.toMillis() || 0;
+      const bTime = b.data().createdAt?.toMillis() || 0;
+      return aTime - bTime;
+    });
     
     let html = `
       <div style="background: white; padding: 20px; border-radius: 5px; margin-top: 20px;">
-        <h3 style="margin-bottom: 20px;">📋 ${testName} - প্রশ্ন সমূহ (${snapshot.size}টি)</h3>
+        <h3 style="margin-bottom: 20px;">📋 ${testName} - প্রশ্ন সমূহ (${docs.length}টি)</h3>
         <button class="btn" onclick="document.getElementById('modelTestsContainer').innerHTML=''; loadModelTests();" style="margin-bottom: 15px;">← পিছনে যান</button>
         <table style="width: 100%; border-collapse: collapse;">
           <thead>
@@ -363,7 +378,7 @@ async function viewTestQuestions(testId, testName) {
           <tbody>
     `;
     
-    snapshot.forEach(doc => {
+    docs.forEach(doc => {
       const q = doc.data();
       html += `
         <tr style="border-bottom: 1px solid #ddd;">
