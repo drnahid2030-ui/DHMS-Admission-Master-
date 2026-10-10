@@ -31,7 +31,10 @@
     td { padding: 12px; border-bottom: 1px solid #eee; font-size: 13px; }
     tr:hover { background: #f9f9f9; }
     .action-btn { padding: 5px 10px; margin: 2px; font-size: 11px; }
-    .loading { text-align: center; padding: 40px; color: #666; }
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; margin-bottom: 5px; font-weight: 600; }
+    .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+    .model-test-item { background: white; padding: 20px; margin-bottom: 15px; border-radius: 5px; border-left: 4px solid #0F766E; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
     .error { background: #FEE2E2; color: #991B1B; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
     .success { background: #DCFCE7; color: #166534; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
   </style>
@@ -64,8 +67,7 @@
     <div class="search-box">
       <input type="text" id="search" placeholder="নাম বা মোবাইল দিয়ে খুঁজুন..." onkeyup="filterTable()">
     </div>
-    <div id="loading" class="loading">লোড হচ্ছে...</div>
-    <table id="userTable" style="display:none;">
+    <table id="userTable">
       <thead>
         <tr>
           <th>নাম</th>
@@ -84,7 +86,47 @@
 
   <!-- TAB: QUESTIONS -->
   <div id="questions" class="tab-content">
-    <h2>নতুন প্রশ্ন যোগ করুন (শীঘ্রই আসছে)</h2>
+    <h2>নতুন প্রশ্ন যোগ করুন</h2>
+    <div class="form-group">
+      <label>বিষয়:</label>
+      <select id="subjectSelect">
+        <option value="বাংলা">বাংলা</option>
+        <option value="English">English</option>
+        <option value="গণিত">গণিত</option>
+        <option value="বিজ্ঞান">বিজ্ঞান</option>
+        <option value="সাধারণ জ্ঞান">সাধারণ জ্ঞান</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>প্রশ্ন:</label>
+      <textarea id="questionText" placeholder="প্রশ্ন লিখুন..." rows="4"></textarea>
+    </div>
+    <div class="form-group">
+      <label>অপশন A:</label>
+      <input type="text" id="optionA" placeholder="অপশন A">
+    </div>
+    <div class="form-group">
+      <label>অপশন B:</label>
+      <input type="text" id="optionB" placeholder="অপশন B">
+    </div>
+    <div class="form-group">
+      <label>অপশন C:</label>
+      <input type="text" id="optionC" placeholder="অপশন C">
+    </div>
+    <div class="form-group">
+      <label>অপশন D:</label>
+      <input type="text" id="optionD" placeholder="অপশন D">
+    </div>
+    <div class="form-group">
+      <label>সঠিক উত্তর:</label>
+      <select id="answerSelect">
+        <option value="A">A</option>
+        <option value="B">B</option>
+        <option value="C">C</option>
+        <option value="D">D</option>
+      </select>
+    </div>
+    <button class="btn" onclick="saveQuestion()">প্রশ্ন সেভ করুন</button>
   </div>
 
   <!-- TAB: MODEL TESTS -->
@@ -95,7 +137,7 @@
   </div>
 </div>
 
-<!-- Firebase SDK (compat version - works with old syntax) -->
+<!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
 
@@ -110,23 +152,17 @@ const firebaseConfig = {
   appId: "1:794922118272:web:2da02faf8f94286347ca65"
 };
 
-// Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-console.log("✅ Firebase initialized");
-
 let allUsers = [];
 
-// Show error
 function showError(msg) {
   const el = document.getElementById('error');
   el.textContent = '❌ ' + msg;
   el.style.display = 'block';
-  console.error(msg);
 }
 
-// Show success
 function showSuccess(msg) {
   const el = document.getElementById('success');
   el.textContent = '✅ ' + msg;
@@ -134,48 +170,43 @@ function showSuccess(msg) {
   setTimeout(() => { el.style.display = 'none'; }, 3000);
 }
 
-// Switch tabs
 function switchTab(tab) {
   document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
   document.getElementById(tab).classList.add('active');
   event.target.classList.add('active');
+  
+  if (tab === 'model-tests') loadModelTests();
 }
 
-// Load users from Firestore
+// ========== USERS ==========
 async function loadUsers() {
-  console.log("📋 Loading users...");
-  document.getElementById('loading').style.display = 'block';
-  document.getElementById('userTable').style.display = 'none';
-  
   try {
     const snapshot = await db.collection('users').get();
-    
-    if (snapshot.empty) {
-      showError('কোনো ব্যবহারকারী পাওয়া যায়নি');
-      document.getElementById('loading').textContent = 'কোনো ডেটা নেই';
-      return;
-    }
-
     allUsers = [];
     snapshot.forEach(doc => {
       allUsers.push({ _id: doc.id, ...doc.data() });
     });
-
-    console.log("✅ Loaded", allUsers.length, "users");
     renderStats();
     renderTable();
-    
-    document.getElementById('loading').style.display = 'none';
-    document.getElementById('userTable').style.display = 'table';
   } catch (err) {
-    console.error("❌ Error:", err);
-    showError('Firebase সংযোগ ব্যর্থ: ' + err.message);
-    document.getElementById('loading').textContent = 'ত্রুটি: ' + err.message;
+    showError('লোড ব্যর্থ: ' + err.message);
   }
 }
 
-// Render stats
+function isUserActive(user) {
+  let lastSeenTime = null;
+  if (user.lastSeen) {
+    lastSeenTime = user.lastSeen.toDate ? user.lastSeen.toDate() : new Date(user.lastSeen);
+  } else if (user.time) {
+    lastSeenTime = user.time instanceof Date ? user.time : new Date(user.time);
+  }
+  if (!lastSeenTime) return false;
+  const now = new Date();
+  const minutesAgo = (now - lastSeenTime) / (1000 * 60);
+  return minutesAgo < 5;
+}
+
 function renderStats() {
   const total = allUsers.length;
   const blocked = allUsers.filter(u => u.blocked).length;
@@ -202,36 +233,14 @@ function renderStats() {
   `;
 }
 
-// Check if user is active (last seen within 5 minutes)
-function isUserActive(user) {
-  let lastSeenTime = null;
-  
-  // Check multiple possible field names
-  if (user.lastSeen) {
-    lastSeenTime = user.lastSeen.toDate ? user.lastSeen.toDate() : new Date(user.lastSeen);
-  } else if (user.time) {
-    lastSeenTime = user.time instanceof Date ? user.time : new Date(user.time);
-  } else if (user.completedAt) {
-    lastSeenTime = user.completedAt instanceof Date ? user.completedAt : new Date(user.completedAt);
-  }
-  
-  if (!lastSeenTime) return false;
-  
-  const now = new Date();
-  const minutesAgo = (now - lastSeenTime) / (1000 * 60);
-  return minutesAgo < 5; // Active if within last 5 minutes
-}
-
-// Render table
 function renderTable() {
   const tbody = document.getElementById('tbody');
   tbody.innerHTML = '';
   
-  // Sort: active users first
   const sortedUsers = [...allUsers].sort((a, b) => {
     const aActive = isUserActive(a) ? 1 : 0;
     const bActive = isUserActive(b) ? 1 : 0;
-    return bActive - aActive; // Active first
+    return bActive - aActive;
   });
   
   sortedUsers.forEach(user => {
@@ -252,7 +261,7 @@ function renderTable() {
             ${user.hasBookPurchase ? '✅' : '❌'}
           </button>
         </td>
-        <td>${user.blocked ? '🔒 ব্লক' : '✅'}</td>
+        <td>${user.blocked ? '🔒' : '✅'}</td>
         <td>
           <button class="btn action-btn" onclick="toggleBlock('${user._id}', ${!user.blocked})">
             ${user.blocked ? 'আনব্লক' : 'ব্লক'}
@@ -264,53 +273,289 @@ function renderTable() {
   });
 }
 
-// Filter table
 function filterTable() {
   const term = document.getElementById('search').value.toLowerCase();
   const rows = document.querySelectorAll('#tbody tr');
-  
   rows.forEach(row => {
-    const text = row.textContent.toLowerCase();
-    row.style.display = text.includes(term) ? '' : 'none';
+    row.style.display = row.textContent.toLowerCase().includes(term) ? '' : 'none';
   });
 }
 
-// Toggle book purchase
 async function toggleBook(id, value) {
   try {
     await db.collection('users').doc(id).update({ hasBookPurchase: value });
-    showSuccess(value ? 'বই ক্রেতা চিহ্নিত করা হয়েছে' : 'বই ক্রেতা অপসারণ করা হয়েছে');
+    showSuccess(value ? '✅ চিহ্নিত' : '❌ অপসারণ');
     loadUsers();
   } catch (err) {
-    showError('আপডেট ব্যর্থ: ' + err.message);
+    showError('আপডেট ব্যর্থ');
   }
 }
 
-// Toggle block
 async function toggleBlock(id, value) {
   try {
     await db.collection('users').doc(id).update({ blocked: value });
-    showSuccess(value ? 'ব্যবহারকারী ব্লক করা হয়েছে' : 'ব্যবহারকারী আনব্লক করা হয়েছে');
+    showSuccess(value ? '✅ ব্লক' : '✅ আনব্লক');
     loadUsers();
   } catch (err) {
-    showError('আপডেট ব্যর্থ: ' + err.message);
+    showError('আপডেট ব্যর্থ');
   }
 }
 
-// Delete user
 async function delUser(id) {
-  if (!confirm('নিশ্চিত? এটি মুছে ফেলা হবে।')) return;
-  
+  if (!confirm('নিশ্চিত?')) return;
   try {
     await db.collection('users').doc(id).delete();
-    showSuccess('ব্যবহারকারী মুছে ফেলা হয়েছে');
+    showSuccess('মুছে ফেলা হয়েছে');
     loadUsers();
   } catch (err) {
-    showError('ডিলিট ব্যর্থ: ' + err.message);
+    showError('ডিলিট ব্যর্থ');
   }
 }
 
-// Load test data
+// ========== QUESTIONS ==========
+async function saveQuestion() {
+  const subject = document.getElementById('subjectSelect').value;
+  const question = document.getElementById('questionText').value;
+  const optionA = document.getElementById('optionA').value;
+  const optionB = document.getElementById('optionB').value;
+  const optionC = document.getElementById('optionC').value;
+  const optionD = document.getElementById('optionD').value;
+  const answer = document.getElementById('answerSelect').value;
+  
+  if (!question || !optionA || !optionB || !optionC || !optionD) {
+    showError('সব ফিল্ড পূরণ করুন');
+    return;
+  }
+  
+  try {
+    await db.collection('custom_questions').add({
+      subject: subject,
+      question: question,
+      options: [optionA, optionB, optionC, optionD],
+      answer: answer,
+      createdAt: new Date()
+    });
+    showSuccess('প্রশ্ন সংরক্ষিত হয়েছে');
+    document.getElementById('questionText').value = '';
+    document.getElementById('optionA').value = '';
+    document.getElementById('optionB').value = '';
+    document.getElementById('optionC').value = '';
+    document.getElementById('optionD').value = '';
+  } catch (err) {
+    showError('সংরক্ষণ ব্যর্থ: ' + err.message);
+  }
+}
+
+// ========== MODEL TESTS ==========
+async function loadModelTests() {
+  try {
+    const snapshot = await db.collection('model_tests').get();
+    const allDocs = snapshot.docs.sort((a, b) => {
+      const aTime = a.data().createdAt?.toMillis() || 0;
+      const bTime = b.data().createdAt?.toMillis() || 0;
+      return aTime - bTime;
+    });
+    
+    if (allDocs.length === 0) {
+      document.getElementById('modelTestsContainer').innerHTML = '<p>কোনো মডেল টেস্ট নেই</p>';
+      return;
+    }
+
+    let html = '';
+    for (const doc of allDocs) {
+      const test = doc.data();
+      const testId = doc.id;
+      const qSnap = await db.collection('model_test_questions').where('model_test_id', '==', testId).get();
+      const questionCount = qSnap.size;
+      
+      html += `
+        <div class="model-test-item">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <div>
+              <h3>📝 ${test.name}</h3>
+              <p style="color: #666; font-size: 12px;">মোট প্রশ্ন: <strong>${questionCount}</strong></p>
+            </div>
+            <div>
+              <button class="btn" onclick="editTest('${testId}', '${test.name}')" style="margin-right: 5px;">এডিট</button>
+              <button class="btn danger" onclick="deleteTest('${testId}')">ডিলিট</button>
+            </div>
+          </div>
+          <div id="test-${testId}" style="display:none; margin-top: 15px; padding: 15px; background: #f9f9f9; border-radius: 4px;"></div>
+        </div>
+      `;
+    }
+    
+    document.getElementById('modelTestsContainer').innerHTML = html;
+  } catch (err) {
+    showError('লোড ব্যর্থ: ' + err.message);
+  }
+}
+
+async function editTest(testId, testName) {
+  try {
+    const qSnap = await db.collection('model_test_questions').where('model_test_id', '==', testId).get();
+    
+    let html = `
+      <h4>প্রশ্ন যোগ করুন - ${testName}</h4>
+      <div class="form-group">
+        <label>ক্যাটাগরি:</label>
+        <select id="catSelect-${testId}">
+          <option value="Bangla">বাংলা</option>
+          <option value="English">English</option>
+          <option value="Math">গণিত</option>
+          <option value="Science">বিজ্ঞান</option>
+          <option value="General Knowledge">সাধারণ জ্ঞান</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>প্রশ্ন:</label>
+        <textarea id="q-${testId}" placeholder="প্রশ্ন" rows="3" style="width:100%; padding:8px; border:1px solid #ddd;"></textarea>
+      </div>
+      <div class="form-group">
+        <label>অপশন A:</label>
+        <input type="text" id="a-${testId}" placeholder="A" style="width:100%; padding:8px; border:1px solid #ddd;">
+      </div>
+      <div class="form-group">
+        <label>অপশন B:</label>
+        <input type="text" id="b-${testId}" placeholder="B" style="width:100%; padding:8px; border:1px solid #ddd;">
+      </div>
+      <div class="form-group">
+        <label>অপশন C:</label>
+        <input type="text" id="c-${testId}" placeholder="C" style="width:100%; padding:8px; border:1px solid #ddd;">
+      </div>
+      <div class="form-group">
+        <label>অপশন D:</label>
+        <input type="text" id="d-${testId}" placeholder="D" style="width:100%; padding:8px; border:1px solid #ddd;">
+      </div>
+      <div class="form-group">
+        <label>সঠিক উত্তর:</label>
+        <select id="ans-${testId}" style="width:100%; padding:8px; border:1px solid #ddd;">
+          <option value="A">A</option>
+          <option value="B">B</option>
+          <option value="C">C</option>
+          <option value="D">D</option>
+        </select>
+      </div>
+      <button class="btn success" onclick="addQuestionToTest('${testId}')">প্রশ্ন যোগ করুন</button>
+      <button class="btn" onclick="loadModelTests()" style="margin-left: 5px;">বন্ধ করুন</button>
+      
+      <h4 style="margin-top: 20px;">বিদ্যমান প্রশ্নসমূহ (${qSnap.size})</h4>
+      <table style="width:100%; margin-top:10px;">
+        <thead>
+          <tr style="background:#f0f0f0;">
+            <th style="padding:8px; text-align:left; border:1px solid #ddd;">ক্যাটাগরি</th>
+            <th style="padding:8px; text-align:left; border:1px solid #ddd;">প্রশ্ন</th>
+            <th style="padding:8px; text-align:left; border:1px solid #ddd;">উত্তর</th>
+            <th style="padding:8px; text-align:left; border:1px solid #ddd;">অ্যাকশন</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+    
+    qSnap.forEach(doc => {
+      const q = doc.data();
+      html += `
+        <tr style="border-bottom:1px solid #ddd;">
+          <td style="padding:8px; border:1px solid #ddd;">${q.category || 'N/A'}</td>
+          <td style="padding:8px; border:1px solid #ddd;">${q.q.substring(0, 40)}...</td>
+          <td style="padding:8px; border:1px solid #ddd;">${q.answer}</td>
+          <td style="padding:8px; border:1px solid #ddd;">
+            <button class="btn danger" onclick="deleteQuestion('${doc.id}', '${testId}')" style="padding:3px 8px; font-size:11px;">ডিলিট</button>
+          </td>
+        </tr>
+      `;
+    });
+    
+    html += `</tbody></table>`;
+    document.getElementById(`test-${testId}`).innerHTML = html;
+    document.getElementById(`test-${testId}`).style.display = 'block';
+  } catch (err) {
+    showError('এডিট ব্যর্থ');
+  }
+}
+
+async function addQuestionToTest(testId) {
+  const category = document.getElementById(`catSelect-${testId}`).value;
+  const q = document.getElementById(`q-${testId}`).value;
+  const a = document.getElementById(`a-${testId}`).value;
+  const b = document.getElementById(`b-${testId}`).value;
+  const c = document.getElementById(`c-${testId}`).value;
+  const d = document.getElementById(`d-${testId}`).value;
+  const answer = document.getElementById(`ans-${testId}`).value;
+  
+  if (!q || !a || !b || !c || !d) {
+    showError('সব ফিল্ড পূরণ করুন');
+    return;
+  }
+  
+  try {
+    const testSnap = await db.collection('model_tests').doc(testId).get();
+    const testName = testSnap.data().name;
+    
+    await db.collection('model_test_questions').add({
+      model_test_id: testId,
+      model_test_name: testName,
+      category: category,
+      q: q,
+      options: [a, b, c, d],
+      answer: answer,
+      answerIndex: answer.charCodeAt(0) - 65,
+      createdAt: new Date()
+    });
+    
+    showSuccess('প্রশ্ন যোগ হয়েছে');
+    editTest(testId, testName);
+  } catch (err) {
+    showError('যোগ ব্যর্থ: ' + err.message);
+  }
+}
+
+async function deleteQuestion(questionId, testId) {
+  if (!confirm('নিশ্চিত?')) return;
+  try {
+    await db.collection('model_test_questions').doc(questionId).delete();
+    showSuccess('ডিলিট হয়েছে');
+    const testSnap = await db.collection('model_tests').doc(testId).get();
+    editTest(testId, testSnap.data().name);
+  } catch (err) {
+    showError('ডিলিট ব্যর্থ');
+  }
+}
+
+async function deleteTest(testId) {
+  if (!confirm('সব প্রশ্নও ডিলিট হবে - নিশ্চিত?')) return;
+  try {
+    await db.collection('model_tests').doc(testId).delete();
+    const qSnap = await db.collection('model_test_questions').where('model_test_id', '==', testId).get();
+    for (const doc of qSnap.docs) {
+      await doc.ref.delete();
+    }
+    showSuccess('ডিলিট হয়েছে');
+    loadModelTests();
+  } catch (err) {
+    showError('ডিলিট ব্যর্থ');
+  }
+}
+
+function showCreateTestForm() {
+  const name = prompt('টেস্টের নাম (যেমন: Model Test 05):');
+  if (!name) return;
+  createNewTest(name);
+}
+
+async function createNewTest(name) {
+  try {
+    await db.collection('model_tests').add({
+      name: name,
+      createdAt: new Date()
+    });
+    showSuccess('টেস্ট তৈরি হয়েছে');
+    loadModelTests();
+  } catch (err) {
+    showError('তৈরি ব্যর্থ');
+  }
+}
+
 function loadTestData() {
   allUsers = [
     { _id: '1', name: 'রহিম সাহেব', mobile: '01234567890', sessions: 60, totalSeconds: 216000, totalAttempted: 500, totalCorrect: 400, hasBookPurchase: true, blocked: false },
@@ -319,193 +564,10 @@ function loadTestData() {
   ];
   renderStats();
   renderTable();
-  document.getElementById('loading').style.display = 'none';
-  document.getElementById('userTable').style.display = 'table';
   showSuccess('টেস্ট ডেটা লোড হয়েছে');
 }
 
-// ============ MODEL TESTS FUNCTIONS ============
-
-async function loadModelTests() {
-  console.log("📋 Loading model tests...");
-  try {
-    // Simple query - sorting done client-side
-    const snapshot = await db.collection('model_tests').get();
-    
-    // Sort by createdAt
-    const allDocs = snapshot.docs.sort((a, b) => {
-      const aTime = a.data().createdAt?.toMillis() || 0;
-      const bTime = b.data().createdAt?.toMillis() || 0;
-      return aTime - bTime;
-    });
-    
-    let html = '';
-    
-    if (allDocs.length === 0) {
-      document.getElementById('modelTestsContainer').innerHTML = '<p>কোনো মডেল টেস্ট নেই</p>';
-      return;
-    }
-
-    for (const doc of allDocs) {
-      const test = doc.data();
-      const testId = doc.id;
-      
-      // Count questions - simple query
-      const qSnap = await db.collection('model_test_questions')
-        .where('model_test_id', '==', testId)
-        .get();
-      
-      const questionCount = qSnap.size;
-      
-      html += `
-        <div class="model-test-item" style="background: white; padding: 20px; margin-bottom: 15px; border-radius: 5px; border-left: 4px solid #0F766E;">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div>
-              <h3 style="margin-bottom: 5px;">📝 ${test.name}</h3>
-              <p style="color: #666; font-size: 12px;">মোট প্রশ্ন: <strong>${questionCount}</strong></p>
-            </div>
-            <div>
-              <button class="btn" style="padding: 5px 15px; font-size: 12px; margin-right: 5px;" onclick="viewTestQuestions('${testId}', '${test.name}')">দেখুন</button>
-              <button class="btn danger" style="padding: 5px 15px; font-size: 12px;" onclick="deleteTest('${testId}', '${test.name}')">ডিলিট</button>
-            </div>
-          </div>
-        </div>
-      `;
-    }
-    
-    document.getElementById('modelTestsContainer').innerHTML = html;
-  } catch (err) {
-    console.error("❌ Error:", err);
-    showError('মডেল টেস্ট লোড ব্যর্থ: ' + err.message);
-  }
-}
-
-async function viewTestQuestions(testId, testName) {
-  console.log("📝 Viewing questions for:", testName);
-  
-  try {
-    // Simple query - filtering done client-side
-    const snapshot = await db.collection('model_test_questions')
-      .where('model_test_id', '==', testId)
-      .get();
-    
-    // Sort client-side
-    const docs = snapshot.docs.sort((a, b) => {
-      const aTime = a.data().createdAt?.toMillis() || 0;
-      const bTime = b.data().createdAt?.toMillis() || 0;
-      return aTime - bTime;
-    });
-    
-    let html = `
-      <div style="background: white; padding: 20px; border-radius: 5px; margin-top: 20px;">
-        <h3 style="margin-bottom: 20px;">📋 ${testName} - প্রশ্ন সমূহ (${docs.length}টি)</h3>
-        <button class="btn" onclick="document.getElementById('modelTestsContainer').innerHTML=''; loadModelTests();" style="margin-bottom: 15px;">← পিছনে যান</button>
-        <table style="width: 100%; border-collapse: collapse;">
-          <thead>
-            <tr style="background: #f0f0f0;">
-              <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">ক্যাটাগরি</th>
-              <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">প্রশ্ন</th>
-              <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">সঠিক উত্তর</th>
-              <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">অ্যাকশন</th>
-            </tr>
-          </thead>
-          <tbody>
-    `;
-    
-    docs.forEach(doc => {
-      const q = doc.data();
-      html += `
-        <tr style="border-bottom: 1px solid #ddd;">
-          <td style="padding: 10px; border: 1px solid #ddd;">${q.category || 'N/A'}</td>
-          <td style="padding: 10px; border: 1px solid #ddd;">${q.q.substring(0, 50)}...</td>
-          <td style="padding: 10px; border: 1px solid #ddd;">${q.answer}</td>
-          <td style="padding: 10px; border: 1px solid #ddd;">
-            <button class="btn danger" style="padding: 3px 10px; font-size: 11px;" onclick="deleteQuestion('${doc.id}', '${testId}')">ডিলিট</button>
-          </td>
-        </tr>
-      `;
-    });
-    
-    html += `</tbody></table></div>`;
-    document.getElementById('modelTestsContainer').innerHTML = html;
-  } catch (err) {
-    showError('প্রশ্ন লোড ব্যর্থ: ' + err.message);
-  }
-}
-
-async function deleteTest(testId, testName) {
-  if (!confirm(`${testName} মডেল টেস্ট ডিলিট করবেন? এর সব প্রশ্নও ডিলিট হবে।`)) return;
-  
-  try {
-    // Delete test document
-    await db.collection('model_tests').doc(testId).delete();
-    
-    // Delete all questions in this test
-    const qSnap = await db.collection('model_test_questions')
-      .where('model_test_id', '==', testId)
-      .get();
-    
-    for (const doc of qSnap.docs) {
-      await doc.ref.delete();
-    }
-    
-    showSuccess('মডেল টেস্ট ডিলিট হয়েছে');
-    loadModelTests();
-  } catch (err) {
-    showError('ডিলিট ব্যর্থ: ' + err.message);
-  }
-}
-
-async function deleteQuestion(questionId, testId) {
-  if (!confirm('প্রশ্ন ডিলিট করবেন?')) return;
-  
-  try {
-    await db.collection('model_test_questions').doc(questionId).delete();
-    showSuccess('প্রশ্ন ডিলিট হয়েছে');
-    // Reload the test questions
-    const testSnap = await db.collection('model_tests').doc(testId).get();
-    if (testSnap.exists) {
-      viewTestQuestions(testId, testSnap.data().name);
-    }
-  } catch (err) {
-    showError('ডিলিট ব্যর্থ: ' + err.message);
-  }
-}
-
-function showCreateTestForm() {
-  const testName = prompt('নতুন মডেল টেস্টের নাম দিন (যেমন: Model Test 01):');
-  if (!testName) return;
-  
-  createNewTest(testName);
-}
-
-async function createNewTest(testName) {
-  try {
-    await db.collection('model_tests').add({
-      name: testName,
-      createdAt: new Date()
-    });
-    showSuccess('নতুন মডেল টেস্ট তৈরি হয়েছে');
-    loadModelTests();
-  } catch (err) {
-    showError('টেস্ট তৈরি ব্যর্থ: ' + err.message);
-  }
-}
-
-// Override switchTab to load model tests when switching to that tab
-const originalSwitchTab = window.switchTab;
-window.switchTab = function(tab) {
-  originalSwitchTab(tab);
-  if (tab === 'model-tests') {
-    loadModelTests();
-  }
-};
-
-// Load on start
-window.addEventListener('load', function() {
-  loadUsers();
-  loadModelTests();
-});
+window.addEventListener('load', loadUsers);
 </script>
 
 </body>
